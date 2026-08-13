@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Dazed/Dazed.csproj" />
+  <Project Path="DazedGUITools/DazedGUITools.csproj" />
+</Solution>
