@@ -132,7 +132,13 @@ namespace Dazed.Vitals.Rendering
             GC.SuppressFinalize(this);
         }
 
-        internal void SetMatrix4(string name, Matrix4 data)
+        internal void SetMatrix4NotReference(string name, Matrix4 data)
+        {
+            GL.UseProgram(_handle);
+            GL.UniformMatrix4(_uniformLocations[name], true, ref data);
+        }
+
+        internal void SetMatrix4(string name, ref Matrix4 data)
         {
             GL.UseProgram(_handle);
             GL.UniformMatrix4(_uniformLocations[name], true, ref data);
@@ -142,6 +148,18 @@ namespace Dazed.Vitals.Rendering
         {
             GL.UseProgram(_handle);
             GL.Uniform3(_uniformLocations[name], vector3);
+        }
+
+        internal void SetVector2(string name, Vector2 vector2)
+        {
+            GL.UseProgram(_handle);
+            GL.Uniform2(_uniformLocations[name], vector2);
+        }
+
+        internal void SetVector4(string name, Vector4 vector4)
+        {
+            GL.UseProgram(_handle);
+            GL.Uniform4(_uniformLocations[name], vector4);
         }
 
         ~Shader()

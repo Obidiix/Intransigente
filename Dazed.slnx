@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
   <Project Path="Dazed/Dazed.csproj" />
   <Project Path="DazedGUITools/DazedGUITools.csproj" />
 </Solution>

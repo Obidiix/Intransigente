@@ -22,27 +22,31 @@ namespace Dazed.Vitals.Rendering
             }
         }
 
+        public float Width => TextureImage.Width;
+        public float Height => TextureImage.Height;
+
         byte[] pixelsBytes;
 
         MagickImage _dImage;
         readonly MagickImage _roImage;
         readonly bool _isReadOnly;
 
-        public Texture2D(string path, bool pathIsAbsolute = false, bool isReadOnly = true) : base(TextureTarget.Texture2D)
+        public Texture2D(string path, bool isTransparent = false, bool pathIsAbsolute = false, bool isReadOnly = true) : base(TextureTarget.Texture2D)
         {
             _isReadOnly = isReadOnly;
 
             if (!pathIsAbsolute)
-                path = Path.Combine(PathUtils.ResourcesDirectory, path);
+                path = PathUtils.BaseDirectoryCombine(path);
 
             if (_isReadOnly)
                 _roImage = new MagickImage(path);
             else
                 _dImage = new MagickImage(path);
-            TextureImage.Format = MagickFormat.Rgb;
+
+            TextureImage.Format = isTransparent ? MagickFormat.Rgba : MagickFormat.Rgb;
             PushChanges();
             GL.BindTexture(TextureTarget.Texture2D, _textureHandle);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, (int)TextureImage.BaseWidth, (int)TextureImage.BaseHeight, 0, PixelFormat.Rgb, PixelType.UnsignedByte, pixelsBytes);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, isTransparent ? PixelInternalFormat.Rgba : PixelInternalFormat.Rgb, (int)TextureImage.BaseWidth, (int)TextureImage.BaseHeight, 0, isTransparent ? PixelFormat.Rgba : PixelFormat.Rgb, PixelType.UnsignedByte, pixelsBytes);
             GL.TextureParameter(_textureHandle, TextureParameterName.GenerateMipmap, 1/*true*/);
             GL.TextureParameter(_textureHandle, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
             GL.TextureParameter(_textureHandle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);

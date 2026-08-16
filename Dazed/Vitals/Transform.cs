@@ -14,7 +14,7 @@ namespace Dazed.Vitals
         public Matrix4x4 World { get; private set; }
         public Matrix4x4 Local { get; private set; }
 
-        public Transform Parent
+        public Transform? Parent
         {
             get => parent;
             set
@@ -27,7 +27,7 @@ namespace Dazed.Vitals
                 ReloadWorldMatrix();
             }
         }
-        private Transform parent;
+        private Transform? parent;
         private readonly List<Transform> children = new();
 
         private Vector3 localPosition;
@@ -51,7 +51,7 @@ namespace Dazed.Vitals
                 if (parent == null)
                     localPosition = value;
                 else
-                    localPosition = value - Parent.Position;
+                    localPosition = value - parent.Position;
                 ReloadWorldMatrix();
             }
         }

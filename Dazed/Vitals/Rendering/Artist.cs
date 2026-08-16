@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using Dazed.Vitals.Content;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using System;
@@ -30,14 +31,26 @@ namespace Dazed.Vitals.Rendering
         
         public static Vector2i RenderSize { get => _renderSize; }
         private static Vector2i _renderSize = new(1, 1);
+
+        public static float NormalizedHeight => _normalizedHeight;
+        private static float _normalizedHeight;
+
+        public static float NormalizedWidth => _normalizedWidth;
+        private static float _normalizedWidth;
+
         public static float AspectRatio { get => _aspectRatio; }
         private static float _aspectRatio;
+
+        public static event Action OnWidowResize;
 
         private static void RefreshRenderingInfo()
         {
             _renderSize = new((int)(_width * _renderingScale), (int)(_height * _renderingScale));
             _aspectRatio = RenderSize.X / (float)RenderSize.Y;
+            _normalizedHeight = 1 / (float)_height;
+            _normalizedWidth = 1 / (float)_width;
             SetUpFrameBuffer();
+            OnWidowResize?.Invoke();
         }
 
         public static void SetResolution(int width, int height)
@@ -53,8 +66,8 @@ namespace Dazed.Vitals.Rendering
         {
             _ScreenShader = new("screenShader");
             _testShader = new("projectedTest.vert", "test.frag");
-            _testMesh = new("Angor.fbx", _testShader);
-            _testTexture = new("missingtexture.png");
+            _testMesh = new(Chest.GetRelativePath("playerModel"), _testShader);
+            _testTexture = new(Chest.GetRelativePath("missingTexture"));
         }
 
         internal static void Initialize()
@@ -135,9 +148,9 @@ namespace Dazed.Vitals.Rendering
             {
                 Shader shader = part.PartShader;
                 _testTexture.Use();
-                shader.SetMatrix4("view", DazedInstance.debugViewMatrix);
-                shader.SetMatrix4("projection", DazedInstance.debugProjectionMatrix);
-                _testShader.SetMatrix4("model", part.LocalMeshMatrix);
+                shader.SetMatrix4NotReference("view", DazedInstance.debugViewMatrix);
+                shader.SetMatrix4NotReference("projection", DazedInstance.debugProjectionMatrix);
+                _testShader.SetMatrix4NotReference("model", part.LocalMeshMatrix);
 
                 shader.SetVector3("objectColor", new Vector3(1f, 1f, 1f));
                 shader.SetVector3("lightColor", new Vector3(1f, 1f, 1f));

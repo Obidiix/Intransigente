@@ -1,10 +1,10 @@
-﻿using System;
+﻿using OpenTK.Mathematics;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -80,17 +80,17 @@ namespace Dazed.Vitals
             switch (direction)
             {
                 case ObjectDirection.Right:
-                    return transform.Right;
+                    return (Vector3)transform.Right;
                 case ObjectDirection.Left:
-                    return -transform.Right;
+                    return (Vector3)(-transform.Right);
                 case ObjectDirection.Up:
-                    return transform.Up;
+                    return (Vector3)transform.Up;
                 case ObjectDirection.Down:
-                    return -transform.Up;
+                    return (Vector3)(-transform.Up);
                 case ObjectDirection.Forward:
-                    return transform.Forward;
+                    return (Vector3)transform.Forward;
                 case ObjectDirection.Backward:
-                    return -transform.Forward;
+                    return (Vector3)(-transform.Forward);
             }
             return default;
         }
@@ -99,17 +99,17 @@ namespace Dazed.Vitals
             switch (direction)
             {
                 case ObjectDirection.Right:
-                    return -transform.Right;
+                    return (Vector3)(-transform.Right);
                 case ObjectDirection.Left:
-                    return transform.Right;
+                    return (Vector3)transform.Right;
                 case ObjectDirection.Up:
-                    return -transform.Up;
+                    return (Vector3)(-transform.Up);
                 case ObjectDirection.Down:
-                    return transform.Up;
+                    return (Vector3)transform.Up;
                 case ObjectDirection.Forward:
-                    return -transform.Forward;
+                    return (Vector3)(-transform.Forward);
                 case ObjectDirection.Backward:
-                    return transform.Forward;
+                    return (Vector3)transform.Forward;
             }
             return default;
         }
@@ -238,6 +238,7 @@ namespace Dazed.Vitals
             result.Z = tempNumString.ToFloat();
             return result;
         }
-        public static Vector4 ToVector4(this Color color) => new(color.R, color.G, color.B, color.A);
+        public static OpenTK.Mathematics.Vector4 ToVector4(this Color color) => new(color.R, color.G, color.B, color.A);
+        public static OpenTK.Mathematics.Vector4 ToVector4(this Color4 color) => new(color.R, color.G, color.B, color.A);
     }
 }

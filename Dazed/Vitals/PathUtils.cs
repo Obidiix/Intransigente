@@ -11,7 +11,6 @@ namespace Dazed.Vitals
         public const string FragmentShaderFileExtension = ".frag";
 
         public static string BaseDirectory => AppDomain.CurrentDomain.BaseDirectory;
-        public static string ResourcesDirectory => Path.Combine(BaseDirectory, "resources");
         public static string ShadersDirectory => Path.Combine(BaseDirectory, "shaders");
 
         public static string GetExtension(this string value)
@@ -64,7 +63,7 @@ namespace Dazed.Vitals
             return sb.ToString();
         }
 
-        public static string AbsolutePathToAssetPath(this string value)
+        public static string ToRelativePath(string value)
         {
             StringBuilder sb = new(value.Length);
             StringBuilder tempStringBuilder = new();
@@ -76,8 +75,12 @@ namespace Dazed.Vitals
                 }
                 else
                 {
-                    if (tempStringBuilder.ToString().ToLower() == "asset")
+                    if (tempStringBuilder.ToString().ToLower() == "resources")
+                    {
+                        sb.Insert(0, tempStringBuilder);
+                        sb.Insert(0, @"\");
                         break;
+                    }
                     sb.Insert(0, tempStringBuilder);
                     sb.Insert(0, @"\");
                     tempStringBuilder = new();
@@ -133,6 +136,6 @@ namespace Dazed.Vitals
             return segments.All(segment => segment.IndexOfAny(Path.GetInvalidFileNameChars()) == -1);
         }
 
-        internal static string ResourcePathCombine(string s2) => Path.Combine(ResourcesDirectory, s2);
+        internal static string BaseDirectoryCombine(string s2) => Path.Combine(BaseDirectory, s2);
     }
 }

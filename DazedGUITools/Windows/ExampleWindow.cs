@@ -7,7 +7,7 @@ namespace DazedGUITools.Windows
 {
     internal class ExampleWindow : WindowBaseClass
     {
-        public ExampleWindow() : base("Example Window")
+        public ExampleWindow() : base("Example Window", false)
         {
         }
 

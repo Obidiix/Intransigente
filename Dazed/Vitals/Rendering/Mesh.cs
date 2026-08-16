@@ -14,7 +14,7 @@ namespace Dazed.Vitals.Rendering
         {
             VertexCount = 0;
             if (!pathIsAbsolute)
-                path = Path.Combine(PathUtils.ResourcesDirectory, path);
+                path = PathUtils.BaseDirectoryCombine(path);
             var meshData = Chest.AssimpContext.ImportFile(path, Assimp.PostProcessSteps.Triangulate | PostProcessSteps.JoinIdenticalVertices);
             List<MeshPart> allParts = new();
             for (int i = 0; i < meshData.Meshes.Count; i++)

@@ -1,5 +1,8 @@
-﻿using DazedGUITools.Windows;
+﻿using Dazed.Vitals;
+using Dazed.Vitals.Content;
+using DazedGUITools.Windows;
 using ImGuiNET;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -7,6 +10,9 @@ using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -14,12 +20,60 @@ namespace DazedGUITools
 {
     public class MainWindow : GameWindow
     {
-        private static List<WindowBaseClass> activeWindows = [];
-        private static HashSet<string> occupiedWindowName = [];
+        private readonly static List<WindowBaseClass> activeWindows = [];
+        private readonly static HashSet<string> occupiedWindowName = [];
 
+        private readonly static List<WindowBaseClass> queuedWindows = [];
+        private static bool _isDrawing;
+
+        private static readonly Type[] _mainMenuWindows;
+        private static readonly string[] _mainMenuWindowsName;
+
+        internal static string ProjectFolder => _projectFolder;
+        private static string _projectFolder = "null";
+        static StartUpWindow? startUpWindow;
+
+        static MainWindow()
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            List<Type> types = new();
+            List<MainMenuWindowAttribute> attributes = new();
+            for(int a = 0; a < assemblies.Length; a++)
+            {
+                List<Type> mW = GetMainMenuWindows(assemblies[a], out List<MainMenuWindowAttribute> atts);
+                types.AddRange(mW);
+                attributes.AddRange(atts);
+            }
+
+            _mainMenuWindows = new Type[types.Count];
+            _mainMenuWindowsName = new string[types.Count];
+
+            for(int i = 0; i < types.Count; i++)
+            {
+                _mainMenuWindows[i] = types[i];
+                _mainMenuWindowsName[i] = attributes[i].Name;
+            }
+        }
+
+        static List<Type> GetMainMenuWindows(Assembly assembly, out List<MainMenuWindowAttribute> atts)
+        {
+            atts = new();
+            List<Type> windows = new();
+            foreach (Type type in assembly.GetTypes())
+            {
+                object? att = type.GetCustomAttribute<MainMenuWindowAttribute>(true);
+                if (att != null)
+                {
+                    atts.Add((MainMenuWindowAttribute)att);
+                    windows.Add(type);
+                }
+            }
+            return windows;
+        }
 
         public MainWindow() : base(GameWindowSettings.Default, new NativeWindowSettings() { ClientSize = new Vector2i(1600, 900), APIVersion = new Version(3, 3) })
-        { }
+        {
+        }
 
         protected override void OnLoad()
         {
@@ -49,6 +103,8 @@ namespace DazedGUITools
 
             ImguiImplOpenTK4.Init(this);
             ImguiImplOpenGL3.Init();
+
+            startUpWindow = new();
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -79,19 +135,75 @@ namespace DazedGUITools
             SwapBuffers();
         }
 
-        private void RenderGUI()
+        private static void RenderGUI()
         {
+            DisplayMainMenuBar();
+
+            if (startUpWindow != null && startUpWindow.MarkedForDisposal)
+            {
+                _projectFolder = startUpWindow.ResultPath;
+                startUpWindow = null;
+                GUIAppContext.Initialize();
+            }
+
+            if(queuedWindows.Count > 0)
+            {
+                foreach (var win in queuedWindows)
+                    activeWindows.Add(win);
+                queuedWindows.Clear();
+            }
+
             List<WindowBaseClass> disposedWindows = [];
             foreach(WindowBaseClass win in activeWindows)
             {
+                _isDrawing = true;
                 win.CallDraw();
                 if (win.MarkedForDisposal)
                     disposedWindows.Add(win);
             }
+            _isDrawing = false;
             if (disposedWindows.Count == 0)
                 return;
             foreach (WindowBaseClass win in disposedWindows)
+            {
                 activeWindows.Remove(win);
+                occupiedWindowName.Remove(win._uniqueTitle);
+            }
+        }
+
+        private static void DisplayMainMenuBar()
+        {
+            if (ImGui.BeginMainMenuBar())
+            {
+                if (ImGui.BeginMenu("Context Options"))
+                {
+                    if(ImGui.MenuItem("Save Content Table", "Ctrl + B (TODO)"))
+                        SaveContentTable();
+                    ImGui.EndMenu();
+                }
+                if(ImGui.BeginMenu("Tool Windows"))
+                {
+                    for(int i = 0; i < _mainMenuWindowsName.Length; i++)
+                    {
+                        if (ImGui.MenuItem(_mainMenuWindowsName[i]))
+                        {
+                            Activator.CreateInstance(_mainMenuWindows[i]);
+                        }
+                    }
+                    ImGui.EndMenu();
+                }
+                ImGui.EndMainMenuBar();
+            }
+        }
+
+        private static void SaveContentTable()
+        {
+            SerializedContentTable cT = Chest.SerializeContentTable();
+            string content = JsonConvert.SerializeObject(cT);
+            string pathToFile = Path.Combine(_projectFolder, Chest.ContentTableFileName);
+            if (!File.Exists(pathToFile))
+                using (var f = File.Create(pathToFile)) { f.Dispose(); }
+            File.WriteAllText(pathToFile, content);
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -104,7 +216,7 @@ namespace DazedGUITools
         {
             string message = Marshal.PtrToStringAnsi(messagePtr, length);
 
-            bool showMessage = true;
+            bool showMessage;
 
             switch (source)
             {
@@ -130,7 +242,6 @@ namespace DazedGUITools
                         Console.WriteLine($"[DontCare] [{source}] {message}");
                         break;
                     case DebugSeverity.DebugSeverityNotification:
-                        //Logger?.LogDebug($"[{source}] {message}");
                         break;
                     case DebugSeverity.DebugSeverityHigh:
                         Console.Error.WriteLine($"Error: [{source}] {message}");
@@ -154,7 +265,10 @@ namespace DazedGUITools
         {
             if (window == null)
                 return;
-            activeWindows.Add(window);
+            if (_isDrawing)
+                queuedWindows.Add(window);
+            else
+                activeWindows.Add(window);
             occupiedWindowName.Add(window._uniqueTitle);
         }
     }

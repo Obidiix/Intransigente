@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Dazed.Vitals;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,26 +11,43 @@ namespace DazedGUITools.Windows
         internal readonly string _uniqueTitle;
         public readonly string Title;
         public readonly Guid UniqueWindowID;
+        /// <summary>
+        /// Meaning, there can be only one instance of it at a time
+        /// </summary>
+        public readonly bool ExclusiveWindow;
 
         public bool MarkedForDisposal => _markedDisposing;
         private bool _markedDisposing;
 
-        public WindowBaseClass(string title)
+        public WindowBaseClass(string title, bool exclusive)
         {
             Title = title;
             UniqueWindowID = Guid.NewGuid();
-            _uniqueTitle = GetUniqueName(title);
+            _uniqueTitle = GetUniqueName(title, out bool successful);
+            if (!successful)
+            {
+                Scriptorium.Warn($"There can only be one window of type [{GetType()}] at a time.");
+                return;
+            }
             MainWindow.AddWindow(this);
         }
 
-        private string GetUniqueName(string title, int triesCount = 0)
+        private string GetUniqueName(string title, out bool successful, int triesCount = 0)
         {
+            successful = true;
             string currentTitle = title + (triesCount > 0 ? ": " + triesCount.ToString() : "");
             if (!MainWindow.NameIsOccupied(currentTitle))
                 return currentTitle;
-            return GetUniqueName(title, ++triesCount);
+            if (ExclusiveWindow)
+            {
+                successful = false;
+                return "";
+            }
+            return GetUniqueName(title, out successful, ++triesCount);
         }
-
+        /// <summary>
+        /// Marks window for disposal after completing the current draw cycle.
+        /// </summary>
         protected void Close() => _markedDisposing = true;
 
         internal void CallDraw()

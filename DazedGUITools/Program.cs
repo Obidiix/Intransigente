@@ -1,7 +1,10 @@
-﻿namespace DazedGUITools
+﻿using System;
+
+namespace DazedGUITools
 {
     internal class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             var window = new MainWindow();
