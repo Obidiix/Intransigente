@@ -1,8 +1,9 @@
 ﻿using Dazed.Vitals.Content;
 using Dazed.Vitals.Rendering;
-using Dazed.Vitals.Rendering.TextRendering;
+using Dazed.Vitals.Rendering.GUI;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using OpenTK.Platform.Windows;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -19,15 +20,25 @@ namespace Dazed.Vitals
 
         internal static Camera debugCamera;
         internal static Font testFont;
-        internal static RenderedText rText;
         static float rotY;
-
+        static Shader _testShader;
+        static Material _testMaterial;
+        static Mesh _testMesh;
+        static Transform _testMeshTransform;
         internal static bool IsContextRuntime => _isContextRuntime;
+
         private static bool _isContextRuntime;
+
+        private static KeyCombination _reloadShadersCombo = new(Keys.LeftControl, Keys.F8);
+        private bool _triggeredReload;
 
         public DazedInstance(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
         {
             _isContextRuntime = true;
+        }
+
+        static DazedInstance()
+        {
         }
 
         protected override void OnLoad()
@@ -35,21 +46,32 @@ namespace Dazed.Vitals
             base.OnLoad();
             Chest.Initialize();
             Artist.Initialize();
-            Artist.SetResolution(Size.X, Size.Y);
+            Artist.SetResolution(ClientSize.X, ClientSize.Y);
 
-            testFont = new(Chest.GetRelativePath("defaultFont"));
-            rText = new(testFont);
-            rText.Text = "Pato ñato";
-            rText.Color = Color4.Red; 
+            _testMeshTransform = new();
+            testFont = Font.GetFontInstance(Chest.GetRelativePath("defaultFont"));
+            _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
+            _testMaterial = Material.GetMaterialInstance(_testShader);
+            _testMesh = Mesh.GetMeshInstance(Chest.GetRelativePath("playerModel"), _testMaterial);
             debugCamera = new(90);
         }
+
+        protected override void OnUnload()
+        {
+            base.OnUnload();
+        }
+
         protected override void OnFramebufferResize(FramebufferResizeEventArgs e)
         {
             base.OnFramebufferResize(e);
-
-            GL.Viewport(0, 0, e.Width, e.Height);
             Artist.SetResolution(e.Width, e.Height);
-            Camera.ReloadAllProjections();
+            Artist.ReloadWindowPosition(ClientLocation);
+        }
+
+        protected override void OnMove(WindowPositionEventArgs e)
+        {
+            base.OnMove(e);
+            Artist.ReloadWindowPosition(ClientLocation);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -73,38 +95,26 @@ namespace Dazed.Vitals
             if (Input.IsKeyDown(Keys.Right))
                 rotY += MathHelper.DegreesToRadians(Chronos.DeltaTime * 10);
             debugViewRotation = Quaternion.FromAxisAngle(Vector3.UnitY, rotY);
-            debugCamera.Transform.Rotation = (System.Numerics.Quaternion)debugViewRotation;
+            debugCamera.Transform.Rotation = debugViewRotation;
 
-            if (Input.IsKeyDown(Keys.Up))
-                rText.Size += 0.1f;
-            if (Input.IsKeyDown(Keys.Down))
-                rText.Size -= 0.1f;
-            if (Input.IsKeyDown(Keys.Right))
-                rText.HorizontalSpacing += Chronos.DeltaTime;
-            if (Input.IsKeyDown(Keys.Left))
-                rText.HorizontalSpacing -= Chronos.DeltaTime;
-
-            if (Input.IsKeyDown(Keys.L))
-                rText.VerticalSpacing += Chronos.DeltaTime;
-            if (Input.IsKeyDown(Keys.K))
-                rText.VerticalSpacing -= Chronos.DeltaTime;
-
-            if (Input.IsKeyDown(Keys.P))
-                rText.Position += Vector2.UnitX * Chronos.DeltaTime;
-            if (Input.IsKeyDown(Keys.O))
-                rText.Position -= Vector2.UnitX * Chronos.DeltaTime;
-
-            if (Input.IsKeyDown(Keys.D0))
-                rText.Position += Vector2.UnitY * Chronos.DeltaTime;
-            if (Input.IsKeyDown(Keys.D9))
-                rText.Position -= Vector2.UnitY * Chronos.DeltaTime;
+#if DEBUG
+            if(Input.IsKeyDown(Keys.F10))
+                Console.Clear();
+#endif
+            if (_reloadShadersCombo.KeysDown() && !_triggeredReload)
+            {
+                _triggeredReload = true;
+                Artist.TriggerAllShadersReload();
+            }
+            if (_reloadShadersCombo.KeysReleased())
+                _triggeredReload = false;
         }
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             base.OnRenderFrame(args);
+            _testMesh.ApplyRelativeToTransform(_testMeshTransform.World);
             debugCamera.PreDrawCall();
-            Artist.UpdateFrame(args);
-            rText.Render();
+            Artist.DrawFrame(args);
             SwapBuffers();
         }
     }

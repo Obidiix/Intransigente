@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,6 +10,7 @@ namespace Dazed.Vitals.Rendering
     {
         readonly int _vertexBufferObject, _vertexArrayObject, _elementsBufferObject;
         readonly Shader _screenShader;
+        private Vector2 _dimensions;
 
         public FullscreenRenderer(Shader screenShader)
         {
@@ -26,6 +28,14 @@ namespace Dazed.Vitals.Rendering
 
             PositionAttributePointer();
             GL.BindVertexArray(0);
+
+            Artist.OnWidowResize += OnWindowsResize;
+            OnWindowsResize();
+        }
+
+        private void OnWindowsResize()
+        {
+            _dimensions = new Vector2(Artist.Width, Artist.Height);
         }
 
         private void PositionAttributePointer()
@@ -39,13 +49,14 @@ namespace Dazed.Vitals.Rendering
             GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         }
 
-        public void Render(int textureId)
+        public void Render(int textureId, Texture2D dataTexture)
         {
             GL.BindVertexArray(_vertexArrayObject);
             _screenShader.Use();
-            GL.Disable(EnableCap.DepthTest);
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, textureId);
+            dataTexture.Use(TextureUnit.Texture1);
+            _screenShader.SetVector2("screenDimensions", _dimensions);
 
             GL.DrawElements(PrimitiveType.Triangles, QuadData.Indices.Length, DrawElementsType.UnsignedInt, 0);
             GL.BindVertexArray(0);

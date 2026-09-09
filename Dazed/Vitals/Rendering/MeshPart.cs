@@ -10,57 +10,48 @@ namespace Dazed.Vitals.Rendering
     {
         private readonly float[] _arrayBufferData;
         private readonly uint[] _indices;
-        private readonly bool _usesNormals;
-        public Shader PartShader
+        //private readonly bool _usesNormals;
+        private readonly ContainedMeshData _containedMeshData;
+        public Material PartMaterial
         {
-            get => _partShader;
+            get => _partMaterial;
             set
             {
-                _partShader = value;
+                _partMaterial = value;
                 ReloadShaderData();
             }
         }
-        private Shader _partShader;
-        public Matrix4 LocalMeshMatrix { get; internal set; }
+        private Material _partMaterial;
+        public Matrix4 Mesh
+        {
+            get => _meshMatrix;
+            set
+            {
+                _meshMatrix = value;
+                _onWorldChange?.Invoke();
+            }
+        }
+        private Matrix4 _meshMatrix;
 
+        public Action OnWorldChange { get => _onWorldChange; set => _onWorldChange = value; }
+        private Action _onWorldChange;
         private readonly int _vertexCount;
 
         readonly int _vertexBufferObject, _vertexArrayObject, _elementBufferObject;
 
-        public MeshPart(float[] vertices, float[] normals, uint[] indices, int vertexCount, Matrix4 localMeshMatrix, Shader shader)
+        internal MeshPart(float[] vertPos, float[]? normals, float[]? textureCoordinates, uint[] indices, int vertexCount, Matrix4 localMeshMatrix, Material material)
         {
-            LocalMeshMatrix = localMeshMatrix;
-            _usesNormals = normals != null;
-            if (_usesNormals)
-            {
-                int accumulated = 0;
-                int offset = 0;
+            if (vertPos == null || vertPos.Length == 0)
+                throw new ArgumentException("Vertex positions array can NOT be null nor empty.");
 
-                _arrayBufferData = new float[vertices.Length + normals.Length];
-                for (int v = 0; v < vertices.Length; v++)
-                {
-                    _arrayBufferData[v + offset] = vertices[v];
-                    accumulated += 1;
-                    if (accumulated == 3)
-                    {
-                        offset += 3;
-                        accumulated = 0;
-                    }
-                }
-                offset = 3;
-                for (int n = 0; n < normals.Length; n++)
-                {
-                    _arrayBufferData[n + offset] = normals[n];
-                    accumulated += 1;
-                    if (accumulated == 3)
-                    {
-                        offset += 3;
-                        accumulated = 0;
-                    }
-                }
-            }
-            else
-                _arrayBufferData = vertices;
+            _meshMatrix = localMeshMatrix;
+            _containedMeshData = ContainedMeshData.position;
+            if(normals != null)
+                _containedMeshData = (ContainedMeshData)(int)(ContainedMeshData.normals + (int)_containedMeshData);
+            if (textureCoordinates != null)
+                _containedMeshData = (ContainedMeshData)(int)(ContainedMeshData.textureCoordinates + (int)_containedMeshData);
+
+            _arrayBufferData = GetProperArray(vertPos, normals, textureCoordinates);
 
             _indices = indices;
 
@@ -72,7 +63,7 @@ namespace Dazed.Vitals.Rendering
             _elementBufferObject = GL.GenBuffer();
             _vertexArrayObject = GL.GenVertexArray();
             GL.BindVertexArray(_vertexArrayObject);
-            PartShader = shader;
+            PartMaterial = material;
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
@@ -80,49 +71,226 @@ namespace Dazed.Vitals.Rendering
             GL.BindVertexArray(0);
         }
 
-        public void RenderPart()
+        private float[] GetProperArray(float[] vertPos, float[]? normals, float[]? textureCoordinates)
         {
-            if (_partShader == null)
+            switch (_containedMeshData)
+            {
+                case ContainedMeshData.position:
+                    return vertPos;
+                case ContainedMeshData.positionAndNormals:
+                    return ArrangePosAndNormals(vertPos, normals);
+                case ContainedMeshData.positionAndTextureCoordinates:
+                    return ArrangePosAndTextureCoordinates(vertPos, textureCoordinates);
+                default:
+                    return ArrangeAll(vertPos, normals, textureCoordinates);
+            }
+        }
+
+        private float[] ArrangeAll(float[] vertPos, float[]? normals, float[]? textureCoordinates)
+        {
+            int accumulated = 0;
+            int offset = 0;
+
+            float[] array = new float[vertPos.Length + normals.Length + textureCoordinates.Length];
+            for (int v = 0; v < vertPos.Length; v++)
+            {
+                array[v + offset] = vertPos[v];
+                accumulated += 1;
+                if (accumulated == 3)
+                {
+                    //3 - As normals are X,Y,Z
+                    //+2 - As texture coordinates are X,Y
+                    offset += 3 + 2;
+                    accumulated = 0;
+                }
+            }
+            offset = 3;
+            accumulated = 0;
+            for (int n = 0; n < normals.Length; n++)
+            {
+                array[n + offset] = normals[n];
+                accumulated += 1;
+                if (accumulated == 3)
+                {
+                    //3 - As vertex position is X,Y,Z
+                    //+2 - As texture coords are X,Y,Z
+                    offset += 3 + 2;
+                    accumulated = 0;
+                }
+            }
+            offset = 5;
+            accumulated = 0;
+            for(int t = 0; t < textureCoordinates.Length; t++)
+            {
+                array[t + offset] = textureCoordinates[t];
+                accumulated++;
+                if(accumulated == 2)
+                {
+                    //3 - As vertex position is X,Y,Z
+                    //+3 - As normals are X,Y,Z
+                    offset += 3 + 3;
+                    accumulated = 0;
+                }
+            }
+            return array;
+        }
+
+        private float[] ArrangePosAndTextureCoordinates(float[] vertPos, float[]? textureCoordinates)
+        {
+            int accumulated = 0;
+            int offset = 0;
+
+            float[] array = new float[vertPos.Length + textureCoordinates.Length];
+            for (int v = 0; v < vertPos.Length; v++)
+            {
+                array[v + offset] = vertPos[v];
+                accumulated += 1;
+                if (accumulated == 3)
+                {
+                    //2 - As texture coordinates are X,Y
+                    offset += 2;
+                    accumulated = 0;
+                }
+            }
+            offset = 2;
+            for (int n = 0; n < textureCoordinates.Length; n++)
+            {
+                array[n + offset] = textureCoordinates[n];
+                accumulated += 1;
+                if (accumulated == 2)
+                {
+                    //3 - As vertex position is X,Y,Z
+                    offset += 3;
+                    accumulated = 0;
+                }
+            }
+            return array;
+        }
+
+        private float[] ArrangePosAndNormals(float[] vertPos, float[]? normals)
+        {
+            int accumulated = 0;
+            int offset = 0;
+
+            float[] array = new float[vertPos.Length + normals.Length];
+            for (int v = 0; v < vertPos.Length; v++)
+            {
+                array[v + offset] = vertPos[v];
+                accumulated += 1;
+                if (accumulated == 3)
+                {
+                    //3 - As normals are X,Y,Z
+                    offset += 3;
+                    accumulated = 0;
+                }
+            }
+            offset = 3;
+            for (int n = 0; n < normals.Length; n++)
+            {
+                array[n + offset] = normals[n];
+                accumulated += 1;
+                if (accumulated == 3)
+                {
+                    //3 - As vertex position is X,Y,Z
+                    offset += 3;
+                    accumulated = 0;
+                }
+            }
+            return array;
+        }
+
+        internal void Render(in RenderingData data, Matrix4 meshWorld)
+        {
+            if (_partMaterial == null)
             {
                 Scriptorium.Warn("A mesh can not be drawn because it has no shader");
                 return;
             }
+            SetRenderingValues(in data, meshWorld);
             GL.BindVertexArray(_vertexArrayObject);
-            _partShader.Use();
+            _partMaterial.UseMaterial();
             GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
             GL.BindVertexArray(0);
         }
 
+        internal void SetRenderingValues(in RenderingData data, Matrix4 meshWorld)
+        {
+            Artist.MissingTexture.Use();
+            _partMaterial.SetMatrix4("view", data.ViewMatrix);
+            _partMaterial.SetMatrix4("projection", data.ProjectionMatrix);
+            _partMaterial.SetMatrix4("model", _meshMatrix * meshWorld);
+
+            _partMaterial.SetVector3("objectColor", new Vector3(1f, 1f, 1f));
+            _partMaterial.SetVector3("lightColor", new Vector3(1f, 1f, 1f));
+            _partMaterial.SetVector3("lightPos", new Vector3(1.5f, 0, 3));
+            _partMaterial.SetVector3("viewPos", data.CameraPosition);
+        }
+
         private void ReloadShaderData()
         {
-            if (_partShader == null)
+            if (_partMaterial == null)
                 return;
             GL.BindVertexArray(_vertexArrayObject);
-            if (_usesNormals)
-                PositionAndNormalAttributePointer();
-            else
-                PositionAttributePointer();
+            switch (_containedMeshData)
+            {
+                case ContainedMeshData.position:
+                    PositionAttributePointer();
+                    break;
+                case ContainedMeshData.positionAndNormals:
+                    PositionAndNormalAttributePointer();
+                    break;
+                case ContainedMeshData.positionAndTextureCoordinates:
+                    PositionAndTextureCoordinatesAttributePointer();
+                    break;
+                case ContainedMeshData.all:
+                    AllAttributePointer();
+                    break;
+            }
+        }
+
+        private void AllAttributePointer()
+        {
+            int positionLocation = _partMaterial.GetAttribLocation("aPos");
+            GL.EnableVertexAttribArray(positionLocation);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
+
+            int normalLocation = _partMaterial.GetAttribLocation("aNormal");
+            GL.EnableVertexAttribArray(normalLocation);
+            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
+
+            int textCoord = _partMaterial.GetAttribLocation("aTexCoords");
+            GL.EnableVertexAttribArray(textCoord);
+            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
+        }
+
+        private void PositionAndTextureCoordinatesAttributePointer()
+        {
+            int positionLocation = _partMaterial.GetAttribLocation("aPos");
+            GL.EnableVertexAttribArray(positionLocation);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+
+            int textCoord = _partMaterial.GetAttribLocation("aTexCoords");
+            GL.EnableVertexAttribArray(textCoord);
+            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         }
 
         private void PositionAndNormalAttributePointer()
         {
-            int positionLocation = _partShader.GetAttribLocation("aPos");
+            int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
             GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
 
-            int normalLocation = _partShader.GetAttribLocation("aNormal");
+            int normalLocation = _partMaterial.GetAttribLocation("aNormal");
             GL.EnableVertexAttribArray(normalLocation);
             GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
         }
 
         private void PositionAttributePointer()
         {
-            int positionLocation = _partShader.GetAttribLocation("aPos");
+            int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
             GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
         }
-
         public int VertexCount => _vertexCount;
-
     }
 }

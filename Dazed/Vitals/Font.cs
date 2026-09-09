@@ -1,13 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using Dazed.Vitals.Rendering;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 
-namespace Dazed.Vitals.Rendering.TextRendering
+namespace Dazed.Vitals
 {
     public class Font
     {
         public readonly Texture2D _fontTexture;
         public readonly int _charHeight, _charWidth;
         private readonly Dictionary<char, Vector2> _charTexPos;
+        public readonly float _characterAspectRatio;
 
         public int CharAmountX => Nx;
         public int CharAmountY => Ny;
@@ -17,7 +19,19 @@ namespace Dazed.Vitals.Rendering.TextRendering
 
         private readonly int Nx, Ny;
 
-        public Font(string fontDataPath)
+        private readonly static Dictionary<string, Font> _fontInstances = new();
+
+        public static Font GetFontInstance(string fontDataPath)
+        {
+            if (!_fontInstances.TryGetValue(fontDataPath, out Font f))
+            {
+                f = new Font(fontDataPath);
+                _fontInstances.Add(fontDataPath, f);
+            }
+            return f;
+        }
+
+        private Font(string fontDataPath)
         {
             //No testing for file existence, as to ensure the game throwing an exception in case of the font not existing
             string content = File.ReadAllText(fontDataPath);
@@ -26,6 +40,8 @@ namespace Dazed.Vitals.Rendering.TextRendering
             _fontTexture = new(data.TextureRelativePath, true);
             _charWidth = data.CharWidth;
             _charHeight = data.CharHeight;
+
+            _characterAspectRatio = _charWidth / (float)_charHeight;
 
             _charTexPos = new();
             //Number of characters in X

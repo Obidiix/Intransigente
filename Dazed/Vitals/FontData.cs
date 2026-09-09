@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Dazed.Vitals.Rendering.TextRendering
+namespace Dazed.Vitals
 {
     public readonly struct FontData
     {

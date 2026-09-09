@@ -8,7 +8,7 @@ namespace Dazed.Vitals.Rendering
     {
         public static readonly float[] VertexPosAndTexturePosData =
         {
-            // Position         Texture coordinates
+            // Position     Texture coordinates
              1f,  1f, 0.0f, 1.0f, 1.0f, // top right
              1f, -1f, 0.0f, 1.0f, 0.0f, // bottom right
             -1f, -1f, 0.0f, 0.0f, 0.0f, // bottom left

@@ -1,5 +1,4 @@
 ﻿using Dazed.Vitals;
-using Dazed.Vitals.Rendering.TextRendering;
 using ImGuiNET;
 using Newtonsoft.Json;
 using System;

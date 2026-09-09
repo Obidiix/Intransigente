@@ -4,10 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Dazed.Vitals.Rendering.TextRendering
+namespace Dazed.Vitals.Rendering.GUI
 {
-    public class RenderedText : IDisposable
+    public class RenderedText : Renderable
     {
+        public override RenderingPass RenderPass => RenderingPass.userInterface;
+
         public Color4 Color
         {
             get => _textColor;
@@ -15,12 +17,17 @@ namespace Dazed.Vitals.Rendering.TextRendering
         }
         private Color4 _textColor = Color4.White;
 
-        public Vector2 Position
+        public Vector3 LocalPosition
         {
             get => _pos;
             set => _pos = value;
         }
-        private Vector2 _pos;
+        public Vector3 Position
+        {
+            get => _pos;
+            set => _pos = value;
+        }
+        private Vector3 _pos;
 
         private Matrix4 _charScale;
 
@@ -93,6 +100,10 @@ namespace Dazed.Vitals.Rendering.TextRendering
                 ReloadText();
             }
         }
+
+        public override bool AllowRendering => _allowRendering;
+        public bool _allowRendering;
+
         private string _text = string.Empty;
 
         private Vector2[] charPositions;
@@ -102,7 +113,7 @@ namespace Dazed.Vitals.Rendering.TextRendering
 
         static RenderedText()
         {
-            _textShader = new("text");
+            _textShader = Shader.GetShaderInstance("text");
 
             _vbo = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
@@ -126,7 +137,7 @@ namespace Dazed.Vitals.Rendering.TextRendering
             GL.BindVertexArray(0);
         }
 
-        public RenderedText(Font font)
+        public RenderedText(Font font) : base()
         {
             _textFont = font;
             Artist.OnWidowResize += ReloadScaleMatrixOnResize;
@@ -172,11 +183,11 @@ namespace Dazed.Vitals.Rendering.TextRendering
                     offsetY++;
                     offsetX = i;
                 }
-                float x = (i - offsetX) * (_horizontalSpacing * Artist.NormalizedWidth * _size * 10);
-                float y = (0 - offsetY * (_verticalSpacing * Artist.NormalizedHeight * _size * 10));
+                float x = (i - offsetX) * (_horizontalSpacing * _size * 10);
+                float y = (0 - offsetY * (_verticalSpacing * _size * 10));
                 accumulated++;
 
-                charPositions[i] = new(x, y);
+                charPositions[i] = new(x * Artist.NormalizedWidth, y * Artist.NormalizedHeight);
             }
         }
 
@@ -204,7 +215,7 @@ namespace Dazed.Vitals.Rendering.TextRendering
             _lastSize = _size;
         }
 
-        internal void Render()
+        public override void Render(in RenderingData data)
         {
             if (_textFont == null)
             {
@@ -232,9 +243,16 @@ namespace Dazed.Vitals.Rendering.TextRendering
             GL.BindVertexArray(0);
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
+            base.Dispose();
             Artist.OnWidowResize -= ReloadScaleMatrixOnResize;
+        }
+
+        public void MoveRelative(Vector2 move)
+        {
+            _pos.X += move.X;
+            _pos.Y += move.Y;
         }
     }
 }

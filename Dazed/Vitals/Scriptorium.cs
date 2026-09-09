@@ -19,6 +19,7 @@ namespace Dazed.Vitals
         public static void Warn(string message)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write(DateTime.Now.ToString() + " - ");
             if (string.IsNullOrEmpty(message))
                 Console.WriteLine("Null.");
             else

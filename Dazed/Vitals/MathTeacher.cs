@@ -1,6 +1,6 @@
-﻿using System;
+﻿using OpenTK.Mathematics;
+using System;
 using System.Collections.Generic;
-using System.Numerics;
 using System.Text;
 
 namespace Dazed.Vitals;
@@ -41,11 +41,11 @@ public static class MathTeacher
         return angles;
     }
 
-    public static Quaternion ToQuaternion(this Vector3 v) => Quaternion.CreateFromYawPitchRoll(v.Y * DegreesToRadians, v.X * DegreesToRadians, v.Z * DegreesToRadians);
+    public static Quaternion ToQuaternion(this Vector3 v) => Quaternion.FromEulerAngles(v.Y * DegreesToRadians, v.X * DegreesToRadians, v.Z * DegreesToRadians);
 
-    public static Vector3 Up(this Matrix4x4 m) => new(m.M12, m.M22, m.M32);
-    public static Vector3 Right(this Matrix4x4 m) => new(m.M11, m.M21, m.M31);
-    public static Vector3 Forward(this Matrix4x4 m) => new(m.M13, m.M23, m.M33);
+    public static Vector3 Up(this Matrix4 m) => new(m.M12, m.M22, m.M32);
+    public static Vector3 Right(this Matrix4 m) => new(m.M11, m.M21, m.M31);
+    public static Vector3 Forward(this Matrix4 m) => new(m.M13, m.M23, m.M33);
 
     public static uint GetSafeUnsignedInteger(this int value) => value < 0 ? 0 : (uint)value;
 
