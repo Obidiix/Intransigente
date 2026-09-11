@@ -5,15 +5,9 @@ using System.Text;
 namespace Dazed.Vitals.Paisaje
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public abstract class PaisajeElementAttribute : Attribute
+    public abstract class PaisajeElementAttribute(string elementIdentifier, Type elementType) : Attribute
     {
-        public readonly string ElementName;
-        public readonly Type ElementType;
-
-        public PaisajeElementAttribute(string elementName, Type elementType)
-        {
-            ElementName = elementName;
-            ElementType = elementType;
-        }
+        public readonly string ElementIdentifier = elementIdentifier;
+        public readonly Type ElementType = elementType;
     }
 }

@@ -2,10 +2,7 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Text;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -190,7 +187,7 @@ namespace Dazed.Vitals.Rendering
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             RenderFramebuffer();
             GL.Clear(ClearBufferMask.DepthBufferBit);
-            GUIRendering();
+            GuiRendering();
         }
 
         private static void RenderFramebuffer()
@@ -209,7 +206,7 @@ namespace Dazed.Vitals.Rendering
 
             for(int c = 0; c < Cameras.Count; c++)
             {
-                RenderingData data = new(Cameras[c].Projection, Cameras[c].View, (Vector3)Cameras[c].Transform.Position);
+                RenderingData data = new(Cameras[c].Projection, Cameras[c].View, (Vector3)Cameras[c].Transform.Position, Cameras[c].ViewFrustum);
                 if (Cameras[c].RenderingPasses.HasFlag(RenderingPass.geometryFirst))
                 {
                     GL.Clear(ClearBufferMask.DepthBufferBit);
@@ -255,7 +252,7 @@ namespace Dazed.Vitals.Rendering
 
         private static void RenderPass(RenderingPass pass, ref RenderingData data)
         {
-            List<Renderable> collection = null;
+            List<Renderable> collection = null!;
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
@@ -278,7 +275,7 @@ namespace Dazed.Vitals.Rendering
 
         private static void RenderPass(RenderingPass pass)
         {
-            List<Renderable> collection = null;
+            List<Renderable> collection = null!;
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
@@ -299,7 +296,7 @@ namespace Dazed.Vitals.Rendering
             }
         }
 
-        private static void GUIRendering()
+        private static void GuiRendering()
         {
             RenderPass(RenderingPass.userInterface);
         }

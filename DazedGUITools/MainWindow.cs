@@ -20,18 +20,18 @@ namespace DazedGUITools
 {
     public class MainWindow : GameWindow
     {
-        private readonly static List<WindowBaseClass> activeWindows = [];
-        private readonly static HashSet<string> occupiedWindowName = [];
+        private static readonly List<WindowBaseClass> ActiveWindows = [];
+        private static readonly HashSet<string> OccupiedWindowName = [];
 
-        private readonly static List<WindowBaseClass> queuedWindows = [];
+        private static readonly List<WindowBaseClass> QueuedWindows = [];
         private static bool _isDrawing;
 
-        private static readonly Type[] _mainMenuWindows;
-        private static readonly string[] _mainMenuWindowsName;
+        private static readonly Type[] MainMenuWindows;
+        private static readonly string[] MainMenuWindowsName;
 
         internal static string ProjectFolder => _projectFolder;
         private static string _projectFolder = "null";
-        static StartUpWindow? startUpWindow;
+        private static StartUpWindow? _startUpWindow;
 
         static MainWindow()
         {
@@ -45,13 +45,13 @@ namespace DazedGUITools
                 attributes.AddRange(atts);
             }
 
-            _mainMenuWindows = new Type[types.Count];
-            _mainMenuWindowsName = new string[types.Count];
+            MainMenuWindows = new Type[types.Count];
+            MainMenuWindowsName = new string[types.Count];
 
             for(int i = 0; i < types.Count; i++)
             {
-                _mainMenuWindows[i] = types[i];
-                _mainMenuWindowsName[i] = attributes[i].Name;
+                MainMenuWindows[i] = types[i];
+                MainMenuWindowsName[i] = attributes[i].Name;
             }
         }
 
@@ -104,7 +104,7 @@ namespace DazedGUITools
             ImguiImplOpenTK4.Init(this);
             ImguiImplOpenGL3.Init();
 
-            startUpWindow = new();
+            _startUpWindow = new();
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -139,22 +139,22 @@ namespace DazedGUITools
         {
             DisplayMainMenuBar();
 
-            if (startUpWindow != null && startUpWindow.MarkedForDisposal)
+            if (_startUpWindow != null && _startUpWindow.MarkedForDisposal)
             {
-                _projectFolder = startUpWindow.ResultPath;
-                startUpWindow = null;
+                _projectFolder = _startUpWindow.ResultPath;
+                _startUpWindow = null;
                 GUIAppContext.Initialize();
             }
 
-            if(queuedWindows.Count > 0)
+            if(QueuedWindows.Count > 0)
             {
-                foreach (var win in queuedWindows)
-                    activeWindows.Add(win);
-                queuedWindows.Clear();
+                foreach (var win in QueuedWindows)
+                    ActiveWindows.Add(win);
+                QueuedWindows.Clear();
             }
 
             List<WindowBaseClass> disposedWindows = [];
-            foreach(WindowBaseClass win in activeWindows)
+            foreach(WindowBaseClass win in ActiveWindows)
             {
                 _isDrawing = true;
                 win.CallDraw();
@@ -166,8 +166,8 @@ namespace DazedGUITools
                 return;
             foreach (WindowBaseClass win in disposedWindows)
             {
-                activeWindows.Remove(win);
-                occupiedWindowName.Remove(win._uniqueTitle);
+                ActiveWindows.Remove(win);
+                OccupiedWindowName.Remove(win._uniqueTitle);
             }
         }
 
@@ -183,11 +183,11 @@ namespace DazedGUITools
                 }
                 if(ImGui.BeginMenu("Tool Windows"))
                 {
-                    for(int i = 0; i < _mainMenuWindowsName.Length; i++)
+                    for(int i = 0; i < MainMenuWindowsName.Length; i++)
                     {
-                        if (ImGui.MenuItem(_mainMenuWindowsName[i]))
+                        if (ImGui.MenuItem(MainMenuWindowsName[i]))
                         {
-                            Activator.CreateInstance(_mainMenuWindows[i]);
+                            Activator.CreateInstance(MainMenuWindows[i]);
                         }
                     }
                     ImGui.EndMenu();
@@ -259,17 +259,17 @@ namespace DazedGUITools
             }
         }
 
-        internal static bool NameIsOccupied(string name) => occupiedWindowName.Contains(name);
+        internal static bool NameIsOccupied(string name) => OccupiedWindowName.Contains(name);
 
         internal static void AddWindow(WindowBaseClass window)
         {
             if (window == null)
                 return;
             if (_isDrawing)
-                queuedWindows.Add(window);
+                QueuedWindows.Add(window);
             else
-                activeWindows.Add(window);
-            occupiedWindowName.Add(window._uniqueTitle);
+                ActiveWindows.Add(window);
+            OccupiedWindowName.Add(window._uniqueTitle);
         }
     }
 }

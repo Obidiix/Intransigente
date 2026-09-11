@@ -11,16 +11,12 @@ namespace Dazed.Game
     {
         public const string PlayerEntityName = "player";
 
-        public PlayerEntity(Transform? entityTransform = null) : base(PlayerEntityName, entityTransform)
-        {
-        }
-
-        internal override void DrawUpdate()
+        protected override void Draw()
         {
             Scriptorium.Message("Player update");
         }
 
-        internal override void LogicUpdate()
+        protected override void Update()
         {
             Scriptorium.Message("Player draw");
         }

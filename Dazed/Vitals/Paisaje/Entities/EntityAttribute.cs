@@ -3,5 +3,5 @@
     /// <summary>
     /// Exposes the entity to the level editor
     /// </summary>
-    public class EntityAttribute(string elementName) : PaisajeElementAttribute(elementName, typeof(Entity));
+    public class EntityAttribute(string elementIdentifier) : PaisajeElementAttribute(elementIdentifier, typeof(Entity));
 }

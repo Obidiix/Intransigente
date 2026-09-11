@@ -1,27 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Dazed.Vitals.Paisaje;
 
-namespace Dazed.Vitals
+namespace Dazed.Vitals;
+public abstract class Entity : PaisajeElement
 {
-    public abstract class Entity
+    public Transform? Transform { get; private set; }
+
+    protected override void OnCreation()
     {
-        public string Name => _uniqueName;
-        private readonly string _uniqueName;
-
-        public Transform Transform => _transform;
-        private readonly Transform _transform;
-
-        public Entity(string entityUniqueName, Transform? entityTransform = null)
-        {
-            _uniqueName = entityUniqueName;
-            _transform = entityTransform;
-            _transform ??= new();
-        }
-
-        internal abstract void LogicUpdate();
-        internal abstract void DrawUpdate();
-
-        internal virtual void OnDestroy() { }
+        Transform = new Transform();
+        Phone.SubscribeToUpdate(Update);
+        Phone.SubscribeToDrawCall(Draw);
     }
+
+    protected override void OnDestruction()
+    {
+        Phone.UnSubscribeToUpdate(Update);
+        Phone.UnSubscribeToDrawCall(Draw);
+    }
+
+    protected abstract void Update();
+    protected abstract void Draw();
 }

@@ -6,9 +6,9 @@ namespace Dazed.Vitals.Rendering
 {
     public class Shader : IDisposable
     {
-        int _handle;
-        bool _isDisposed;
-        private static event Action ReloadAllShaders;
+        private int _handle;
+        private bool _isDisposed;
+        private static event Action? ReloadAllShaders;
 
         private string _pathFrag, _pathVert;
         private readonly Dictionary<string, int> _uniformLocations = new();

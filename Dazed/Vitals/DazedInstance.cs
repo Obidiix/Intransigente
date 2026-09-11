@@ -1,4 +1,5 @@
-﻿using Dazed.Vitals.Content;
+﻿using System.ComponentModel;
+using Dazed.Vitals.Content;
 using Dazed.Vitals.Rendering;
 using Dazed.Vitals.Rendering.GUI;
 using OpenTK.Graphics.OpenGL;
@@ -38,10 +39,6 @@ namespace Dazed.Vitals
             _isContextRuntime = true;
         }
 
-        static DazedInstance()
-        {
-        }
-
         protected override void OnLoad()
         {
             base.OnLoad();
@@ -58,9 +55,10 @@ namespace Dazed.Vitals
             debugCamera = new(90);
         }
 
-        protected override void OnUnload()
+        protected override void OnClosing(CancelEventArgs e)
         {
-            base.OnUnload();
+            Phone.Quit();
+            base.OnClosing(e);
         }
 
         protected override void OnFramebufferResize(FramebufferResizeEventArgs e)
@@ -110,10 +108,13 @@ namespace Dazed.Vitals
             }
             if (_reloadShadersCombo.KeysReleased())
                 _triggeredReload = false;
+            
+            Phone.Update();
         }
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             base.OnRenderFrame(args);
+            Phone.Draw();
             _testMesh.ApplyRelativeToTransform(_testMeshTransform.World);
             debugCamera.PreDrawCall();
             Artist.DrawFrame(args);
