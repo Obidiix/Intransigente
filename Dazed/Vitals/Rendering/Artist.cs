@@ -13,23 +13,22 @@ namespace Dazed.Vitals.Rendering
     {
         static int _fbo;
         static int _rbo;
-        static int _FrameBufferTexture;
+        static int _frameBufferTexture;
 
-        static FullscreenRenderer FullscreenRender;
-        static readonly Shader _ScreenShader;
+        private static FullscreenRenderer _fullscreenRender = null!;
+        private static readonly Shader ScreenShader;
 
-        public static Texture2D MissingTexture => _missingTexture;
-        static readonly Texture2D _missingTexture;
+        public static Texture2D MissingTexture { get; }
 
         public static int Width { get => _width; internal set { _width = value; RefreshRenderingInfo(); } }
-        internal static int _width;
+        private static int _width;
         public static int Height { get => _height; internal set { _height = value; RefreshRenderingInfo(); } }
-        internal static int _height;
+        private static int _height;
 
         public static float RenderingScale { get => _renderingScale; set { _renderingScale = value < 0.1f ? 0.1f : value; RefreshRenderingInfo(); } }
         private static float _renderingScale = 1f;
-        
-        public static Vector2i RenderSize { get => _renderSize; }
+
+        private static Vector2i RenderSize { get => _renderSize; }
         private static Vector2i _renderSize = new(1, 1);
 
         public static float NormalizedHeight => _normalizedHeight;
@@ -47,21 +46,23 @@ namespace Dazed.Vitals.Rendering
         public static Vector2 WinPos => _winPos;
         private static Vector2 _winPos;
 
-        public static event Action OnWidowResize;
+        public static event Action OnWidowResize = null!;
 
         const int RenderElementsLimit = 4096;
-        private static readonly Renderable?[] _allRender = new Renderable[RenderElementsLimit];
-        private static readonly RenderingPass[] _renderPasses = new RenderingPass[RenderElementsLimit];
+        private static readonly Renderable?[] AllRender = new Renderable[RenderElementsLimit];
+        private static readonly RenderingPass[] RenderPasses = new RenderingPass[RenderElementsLimit];
 
-        private static readonly List<Camera> _cameras = [];
+        private static readonly List<Camera> Cameras = [];
         private static readonly CameraPriorityComparer Comparer = new();
 
-        private static List<Renderable> _geometryFirst = new(), _geometrySecond = new(), _gui = new();
+        private static readonly List<Renderable> GeometryFirst = new();
+        private static readonly List<Renderable> GeometrySecond = new();
+        private static readonly List<Renderable> Gui = new();
         private static bool _modifiedRendered = true;
 
         private static int _currentBindedPosition;
 
-        private static readonly Texture2D _screenShaderData;
+        private static readonly Texture2D ScreenEffectTexture2D;
 
         private static void RefreshRenderingInfo()
         {
@@ -88,16 +89,17 @@ namespace Dazed.Vitals.Rendering
 
         static Artist()
         {
-            _ScreenShader = Shader.GetShaderInstance("screenShader");
-            
-            _missingTexture = new(Chest.GetRelativePath("missingTexture"));
-            _screenShaderData = new(Chest.GetRelativePath("screenShaderDataImage"));
+            ScreenShader = Shader.GetShaderInstance("screenShader");
+            IdentifiedAsset missingTextureAsset = new("missingTexture");
+            IdentifiedAsset screenEffectAsset = new("screenShaderDataImage");
+            MissingTexture = new Texture2D(missingTextureAsset);
+            ScreenEffectTexture2D = new Texture2D(screenEffectAsset);
         }
 
         internal static void Initialize()
         {
             SetUpFrameBuffer();
-            FullscreenRender = new(_ScreenShader);
+            _fullscreenRender = new FullscreenRenderer(ScreenShader);
         }
 
         private static void SetUpFrameBuffer()
@@ -105,22 +107,22 @@ namespace Dazed.Vitals.Rendering
             if (_fbo == 0)
                 _fbo = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
-            if (_FrameBufferTexture == 0)
-                _FrameBufferTexture = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, _FrameBufferTexture);
+            if (_frameBufferTexture == 0)
+                _frameBufferTexture = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, _frameBufferTexture);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, RenderSize.X, RenderSize.Y, 0, PixelFormat.Rgb, PixelType.UnsignedByte, 0);
-            GL.TextureParameter(_FrameBufferTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-            GL.TextureParameter(_FrameBufferTexture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TextureParameter(_FrameBufferTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
-            GL.TextureParameter(_FrameBufferTexture, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, _FrameBufferTexture, 0);
+            GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
+            GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Clamp);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, _frameBufferTexture, 0);
 
             if (_rbo == 0)
                 _rbo = GL.GenRenderbuffer();
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _rbo);
             GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, RenderSize.X, RenderSize.Y);
 
-            GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, _FrameBufferTexture, 0);
+            GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, _frameBufferTexture, 0);
             GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, _rbo);
 
             var status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
@@ -134,7 +136,8 @@ namespace Dazed.Vitals.Rendering
 
         internal static void TriggerAllShadersReload()
         {
-            Scriptorium.Warn("Reloading all shader...");
+            if(DebugState.DebugLow)
+                Scriptorium.Warn("Reloading all shader...");
             Shader.ReloadShaders();
         }
 
@@ -142,8 +145,8 @@ namespace Dazed.Vitals.Rendering
         {
             if (_currentBindedPosition >= RenderElementsLimit)
                 throw new IndexOutOfRangeException("Drawn mesh limit exceeded, either increase arbitrary limit or check for duplicated meshes");
-            _renderPasses[_currentBindedPosition] = rendered.RenderPass;
-            _allRender[_currentBindedPosition++] = rendered;
+            RenderPasses[_currentBindedPosition] = rendered.RenderPass;
+            AllRender[_currentBindedPosition++] = rendered;
 
             _modifiedRendered = true;
             return _currentBindedPosition;
@@ -152,25 +155,25 @@ namespace Dazed.Vitals.Rendering
         internal static void DisposeRendered(int bindPosition)
         {
             _modifiedRendered = true;
-            _allRender[bindPosition] = null;
+            AllRender[bindPosition] = null;
         }
 
         internal static void AddCamera(Camera camera)
         {
-            _cameras.Add(camera);
+            Cameras.Add(camera);
             ReorderCameras();
         }
 
         private static void ReorderCameras()
         {
-            if (_cameras.Count <= 1)
+            if (Cameras.Count <= 1)
                 return;
-            _cameras.Sort(Comparer);
+            Cameras.Sort(Comparer);
         }
 
         internal static void RemoveCamera(Camera camera)
         {
-            _cameras.Remove(camera);
+            Cameras.Remove(camera);
             ReorderCameras();
         }
 
@@ -192,7 +195,7 @@ namespace Dazed.Vitals.Rendering
 
         private static void RenderFramebuffer()
         {
-            FullscreenRender.Render(_FrameBufferTexture, _screenShaderData);
+            _fullscreenRender.Render(_frameBufferTexture, ScreenEffectTexture2D);
         }
 
         private static void RenderMeshed()
@@ -204,15 +207,15 @@ namespace Dazed.Vitals.Rendering
 
             ArrangePasses();
 
-            for(int c = 0; c < _cameras.Count; c++)
+            for(int c = 0; c < Cameras.Count; c++)
             {
-                RenderingData data = new(_cameras[c].Projection, _cameras[c].View, (Vector3)_cameras[c].Transform.Position);
-                if (_cameras[c].RenderingPasses.HasFlag(RenderingPass.geometryFirst))
+                RenderingData data = new(Cameras[c].Projection, Cameras[c].View, (Vector3)Cameras[c].Transform.Position);
+                if (Cameras[c].RenderingPasses.HasFlag(RenderingPass.geometryFirst))
                 {
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     RenderPass(RenderingPass.geometryFirst, ref data);
                 }
-                if (_cameras[c].RenderingPasses.HasFlag(RenderingPass.geometrySecond))
+                if (Cameras[c].RenderingPasses.HasFlag(RenderingPass.geometrySecond))
                 {
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     RenderPass(RenderingPass.geometrySecond, ref data);
@@ -228,23 +231,23 @@ namespace Dazed.Vitals.Rendering
             if (!_modifiedRendered)
                 return;
             _modifiedRendered = false;
-            _geometryFirst.Clear();
-            _geometrySecond.Clear();
-            _gui.Clear();
+            GeometryFirst.Clear();
+            GeometrySecond.Clear();
+            Gui.Clear();
             for(int i = 0; i < _currentBindedPosition; i++)
             {
-                if (_allRender == null)
+                if (AllRender == null)
                     continue;
-                switch (_renderPasses[i])
+                switch (RenderPasses[i])
                 {
                     case RenderingPass.geometryFirst:
-                        _geometryFirst.Add(_allRender[i]);
+                        GeometryFirst.Add(AllRender[i]);
                         break;
                     case RenderingPass.geometrySecond:
-                        _geometrySecond.Add(_allRender[i]);
+                        GeometrySecond.Add(AllRender[i]);
                         break;
                     case RenderingPass.userInterface:
-                        _gui.Add(_allRender[i]);
+                        Gui.Add(AllRender[i]);
                         break;
                 }
             }
@@ -256,13 +259,13 @@ namespace Dazed.Vitals.Rendering
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
-                    collection = _geometryFirst;
+                    collection = GeometryFirst;
                     break;
                 case RenderingPass.geometrySecond:
-                    collection = _geometrySecond;
+                    collection = GeometrySecond;
                     break;
                 case RenderingPass.userInterface:
-                    collection = _gui;
+                    collection = Gui;
                     break;
             }
             foreach(Renderable renderable in collection)
@@ -279,13 +282,13 @@ namespace Dazed.Vitals.Rendering
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
-                    collection = _geometryFirst;
+                    collection = GeometryFirst;
                     break;
                 case RenderingPass.geometrySecond:
-                    collection = _geometrySecond;
+                    collection = GeometrySecond;
                     break;
                 case RenderingPass.userInterface:
-                    collection = _gui;
+                    collection = Gui;
                     break;
             }
             foreach (Renderable renderable in collection)

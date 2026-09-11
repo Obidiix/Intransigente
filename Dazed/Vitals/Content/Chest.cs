@@ -60,33 +60,31 @@ namespace Dazed.Vitals.Content
             if (DazedInstance.IsContextRuntime)
                 throw new OutOfContextExecutionException();
 
-            string[] keys;
-            string[] paths;
+            var keys = keyToPath.Keys.ToArray();
+            var values = keyToPath.Values.ToArray();
 
-            keys = keyToPath.Keys.ToArray();
-            paths = keyToPath.Values.ToArray();
-
-            return new(keys, paths);
+            return new SerializedContentTable(keys, values);
         }
 
         //Written this way to make faulty IDs stand out with an exception.
         public static string GetRelativePath(string id) => keyToPath[id];
 
-        public static AssimpContext AssimpContext { get; private set; }
+        public static AssimpContext AssimpContext { get; private set; } = null!;
+
         internal static void Initialize()
         {
-            string path = PathUtils.BaseDirectoryCombine(ContentTableFileName);
+            var path = PathUtils.BaseDirectoryCombine(ContentTableFileName);
             if (!File.Exists(path))
                 throw new NullReferenceException();
 
-            string content = File.ReadAllText(path);
-            SerializedContentTable? contentTable = JsonConvert.DeserializeObject<SerializedContentTable>(content);
+            var content = File.ReadAllText(path);
+            var contentTable = JsonConvert.DeserializeObject<SerializedContentTable>(content);
 
             if (contentTable == null)
                 throw new NullReferenceException();
 
             LoadContentTable(contentTable);
-            AssimpContext = new();
+            AssimpContext = new AssimpContext();
         }
 
         //May be inefficient, but its only executed once every now and then, so it's *fine*
@@ -95,9 +93,9 @@ namespace Dazed.Vitals.Content
         /// id bonded to it.
         /// </summary>
         /// <param name="relativePath">The path relative from the executable folder</param>
-        /// <returns>Id of an existent path</returns>
+        /// <returns>ID of an existent path</returns>
         /// <exception cref="OutOfContextExecutionException"></exception>
-        public static string GetId(string relativePath)
+        public static string ExternalGetId(string relativePath)
         {
             if (DazedInstance.IsContextRuntime)
                 throw new OutOfContextExecutionException();

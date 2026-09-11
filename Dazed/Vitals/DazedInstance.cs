@@ -19,6 +19,7 @@ namespace Dazed.Vitals
         static Quaternion debugViewRotation = new();
 
         internal static Camera debugCamera;
+        internal static IdentifiedAsset fontAsset;
         internal static Font testFont;
         static float rotY;
         static Shader _testShader;
@@ -49,7 +50,8 @@ namespace Dazed.Vitals
             Artist.SetResolution(ClientSize.X, ClientSize.Y);
 
             _testMeshTransform = new();
-            testFont = Font.GetFontInstance(Chest.GetRelativePath("defaultFont"));
+            fontAsset = new("defaultFont");
+            testFont = Font.GetFontInstance(fontAsset);
             _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
             _testMaterial = Material.GetMaterialInstance(_testShader);
             _testMesh = Mesh.GetMeshInstance(Chest.GetRelativePath("playerModel"), _testMaterial);

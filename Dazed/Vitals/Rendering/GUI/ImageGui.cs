@@ -76,7 +76,7 @@ namespace Dazed.Vitals.Rendering.GUI
 
         private void SetAllShaderValues()
         {
-            _imageShader.SetMatrix4NR("world", World);
+            _imageShader.SetMatrix4NoReference("world", World);
             _imageShader.SetVector4("color", _imgColor);
             _imageShader.SetBool("transparent", _transparent);
         }

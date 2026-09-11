@@ -8,10 +8,10 @@ namespace Dazed.Vitals.Rendering
     public class Material
     {
         private readonly Material? _parent;
-        public bool IsVariant => _parent != null;
+        private bool IsVariant => _parent != null;
 
         private readonly int _uniqueIndex;
-        private static int CurrentAssignedIndex = 0;
+        private static int _currentAssignedIndex = 0;
 
         private readonly Shader _materialShader;
         private readonly Dictionary<string, int> _keyToIndex = [];
@@ -21,8 +21,8 @@ namespace Dazed.Vitals.Rendering
 
         internal event Action<int>? OnParameterChange;
 
-        private static readonly Dictionary<Shader, int> _indexes = [];
-        internal static readonly List<Material> _instancedMaterials = [];
+        private static readonly Dictionary<Shader, int> Indexes = [];
+        private static readonly List<Material> InstancedMaterials = [];
 
         private static int _usedMaterial;
         internal static int UsedMaterialIndex => _usedMaterial;
@@ -30,12 +30,12 @@ namespace Dazed.Vitals.Rendering
         public static Material GetMaterialInstance(Shader matShader, bool forceNewInstance = false)
         {
             if (!forceNewInstance)
-                if (_indexes.TryGetValue(matShader, out var index))
-                    return _instancedMaterials[index];
+                if (Indexes.TryGetValue(matShader, out var index))
+                    return InstancedMaterials[index];
             Material? m = null;
             m = new Material(matShader);
-            _indexes.Add(matShader, _instancedMaterials.Count);
-            _instancedMaterials.Add(m);
+            Indexes.Add(matShader, InstancedMaterials.Count);
+            InstancedMaterials.Add(m);
             return m;
         }
 
@@ -50,7 +50,8 @@ namespace Dazed.Vitals.Rendering
         {
             if (!IsVariant)
             {
-                Scriptorium.Warn("A material base instance should not be updating from a parent, as it shouldn't have one");
+                if(DebugState.DebugLow)
+                    Scriptorium.Warn("A material base instance should not be updating from a parent, as it shouldn't have one");
                 return;
             }
             _params[index].SetValue(_parent._params[index].Value);
@@ -165,7 +166,7 @@ namespace Dazed.Vitals.Rendering
 
         private Material(Shader shader)
         {
-            _uniqueIndex = CurrentAssignedIndex++;
+            _uniqueIndex = _currentAssignedIndex++;
             _materialShader = shader;
             GetUniformsFromShader();
         }
@@ -188,7 +189,7 @@ namespace Dazed.Vitals.Rendering
         //For variants
         private Material(Material mat)
         {
-            _uniqueIndex = CurrentAssignedIndex++;
+            _uniqueIndex = _currentAssignedIndex++;
             _parent = mat;
             _materialShader = mat._materialShader;
             for (int i = 0; i < mat._params.Count; i++)

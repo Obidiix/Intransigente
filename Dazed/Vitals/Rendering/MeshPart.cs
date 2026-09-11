@@ -12,7 +12,7 @@ namespace Dazed.Vitals.Rendering
         private readonly uint[] _indices;
         //private readonly bool _usesNormals;
         private readonly ContainedMeshData _containedMeshData;
-        public Material PartMaterial
+        public Material? PartMaterial
         {
             get => _partMaterial;
             set
@@ -21,23 +21,11 @@ namespace Dazed.Vitals.Rendering
                 ReloadShaderData();
             }
         }
-        private Material _partMaterial;
-        public Matrix4 Mesh
-        {
-            get => _meshMatrix;
-            set
-            {
-                _meshMatrix = value;
-                _onWorldChange?.Invoke();
-            }
-        }
-        private Matrix4 _meshMatrix;
+        private Material? _partMaterial;
+        private readonly Matrix4 _meshMatrix;
 
-        public Action OnWorldChange { get => _onWorldChange; set => _onWorldChange = value; }
-        private Action _onWorldChange;
         private readonly int _vertexCount;
-
-        readonly int _vertexBufferObject, _vertexArrayObject, _elementBufferObject;
+        private readonly int _vertexArrayObject;
 
         internal MeshPart(float[] vertPos, float[]? normals, float[]? textureCoordinates, uint[] indices, int vertexCount, Matrix4 localMeshMatrix, Material material)
         {
@@ -51,27 +39,27 @@ namespace Dazed.Vitals.Rendering
             if (textureCoordinates != null)
                 _containedMeshData = (ContainedMeshData)(int)(ContainedMeshData.textureCoordinates + (int)_containedMeshData);
 
-            _arrayBufferData = GetProperArray(vertPos, normals, textureCoordinates);
+            _arrayBufferData = GetProperArray(vertPos, normals!, textureCoordinates!);
 
             _indices = indices;
 
             _vertexCount = vertexCount;
-            _vertexBufferObject = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+            var vertexBufferObject = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
             GL.BufferData(BufferTarget.ArrayBuffer, _arrayBufferData.Length * sizeof(float), _arrayBufferData, BufferUsageHint.StaticDraw);
 
-            _elementBufferObject = GL.GenBuffer();
+            var elementBufferObject = GL.GenBuffer();
             _vertexArrayObject = GL.GenVertexArray();
             GL.BindVertexArray(_vertexArrayObject);
             PartMaterial = material;
 
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, elementBufferObject);
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
             GL.BindVertexArray(0);
         }
 
-        private float[] GetProperArray(float[] vertPos, float[]? normals, float[]? textureCoordinates)
+        private float[] GetProperArray(float[] vertPos, float[] normals, float[] textureCoordinates)
         {
             switch (_containedMeshData)
             {
@@ -86,12 +74,12 @@ namespace Dazed.Vitals.Rendering
             }
         }
 
-        private float[] ArrangeAll(float[] vertPos, float[]? normals, float[]? textureCoordinates)
+        private float[] ArrangeAll(float[] vertPos, float[] normals, float[] textureCoordinates)
         {
             int accumulated = 0;
             int offset = 0;
 
-            float[] array = new float[vertPos.Length + normals.Length + textureCoordinates.Length];
+            var array = new float[vertPos.Length + normals.Length + textureCoordinates.Length];
             for (int v = 0; v < vertPos.Length; v++)
             {
                 array[v + offset] = vertPos[v];
@@ -135,7 +123,7 @@ namespace Dazed.Vitals.Rendering
             return array;
         }
 
-        private float[] ArrangePosAndTextureCoordinates(float[] vertPos, float[]? textureCoordinates)
+        private float[] ArrangePosAndTextureCoordinates(float[] vertPos, float[] textureCoordinates)
         {
             int accumulated = 0;
             int offset = 0;
@@ -203,7 +191,8 @@ namespace Dazed.Vitals.Rendering
         {
             if (_partMaterial == null)
             {
-                Scriptorium.Warn("A mesh can not be drawn because it has no shader");
+                if(DebugState.DebugLow)
+                    Scriptorium.Warn("A mesh can not be drawn because it has no shader");
                 return;
             }
             SetRenderingValues(in data, meshWorld);
@@ -216,6 +205,7 @@ namespace Dazed.Vitals.Rendering
         internal void SetRenderingValues(in RenderingData data, Matrix4 meshWorld)
         {
             Artist.MissingTexture.Use();
+            if (_partMaterial == null) return;
             _partMaterial.SetMatrix4("view", data.ViewMatrix);
             _partMaterial.SetMatrix4("projection", data.ProjectionMatrix);
             _partMaterial.SetMatrix4("model", _meshMatrix * meshWorld);

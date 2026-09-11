@@ -225,7 +225,7 @@ namespace Dazed.Vitals.Rendering.GUI
 
             GL.BindVertexArray(_vao);
             _textShader.Use();
-            _textFont._fontTexture.Use();
+            _textFont.FontTexture.Use();
             _textShader.SetVector2("texCoordsScale", _textFont.TextureCharScale);
             _textShader.SetVector4("textColorMultiplier", _textColor.ToVector4());
 

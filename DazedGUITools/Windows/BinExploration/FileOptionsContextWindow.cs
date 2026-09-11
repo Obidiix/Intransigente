@@ -31,7 +31,7 @@ namespace DazedGUITools.Windows.BinExploration
             if(Chest.ValueExists(RelativeFilePath))
             {
                 if(_exposedID == null)
-                    _exposedID = Chest.GetId(Path.Combine(_currentRelativePath, _fileName));
+                    _exposedID = Chest.ExternalGetId(Path.Combine(_currentRelativePath, _fileName));
                 ImGui.Text("Is exposed with id value: " + _exposedID);
                 ImGui.SameLine();
                 if(ImGui.Button("Un-expose file"))

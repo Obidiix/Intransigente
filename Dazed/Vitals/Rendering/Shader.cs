@@ -69,24 +69,21 @@ namespace Dazed.Vitals.Rendering
                 _pathVert = vertPath;
                 _pathFrag = fragPath;
             }
-            string VertexShaderSource = File.ReadAllText(vertPath);
-            string FragmentShaderSource = File.ReadAllText(fragPath);
+            var vertexShaderSource = File.ReadAllText(vertPath);
+            var fragmentShaderSource = File.ReadAllText(fragPath);
 
-            int VertexShader;
-            int FragmentShader;
-
-            VertexShader = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(VertexShader, VertexShaderSource);
-            if (!CompileShader(VertexShader))
+            var vertexShader = GL.CreateShader(ShaderType.VertexShader);
+            GL.ShaderSource(vertexShader, vertexShaderSource);
+            if (!CompileShader(vertexShader))
             {
                 if (_handle == 0)
                     throw new Exception("Check console for more information");
                 return;
             }
 
-            FragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(FragmentShader, FragmentShaderSource);
-            if (!CompileShader(FragmentShader))
+            var fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(fragmentShader, fragmentShaderSource);
+            if (!CompileShader(fragmentShader))
             {
                 if (_handle == 0)
                     throw new Exception("Check console for more information");
@@ -97,8 +94,8 @@ namespace Dazed.Vitals.Rendering
                 GL.DeleteProgram(_handle);
             _handle = GL.CreateProgram();
 
-            GL.AttachShader(_handle, VertexShader);
-            GL.AttachShader(_handle, FragmentShader);
+            GL.AttachShader(_handle, vertexShader);
+            GL.AttachShader(_handle, fragmentShader);
 
             LinkProgram(_handle);
 
@@ -118,23 +115,22 @@ namespace Dazed.Vitals.Rendering
                 _uniformLocations.Add(key, location);
             }
 
-            GL.DetachShader(_handle, VertexShader);
-            GL.DetachShader(_handle, FragmentShader);
-            GL.DeleteShader(FragmentShader);
-            GL.DeleteShader(VertexShader);
+            GL.DetachShader(_handle, vertexShader);
+            GL.DetachShader(_handle, fragmentShader);
+            GL.DeleteShader(fragmentShader);
+            GL.DeleteShader(vertexShader);
         }
 
         private static bool FilesExists(string vertPath, string fragPath)
         {
-            if(!File.Exists(vertPath) || !File.Exists(fragPath))
-            {
-                Scriptorium.Warn("Path for vertex / fragment shader does not exists");
-                Scriptorium.Warn($"Vertex path: {vertPath}");
-                Scriptorium.Warn($"Fragment path: {fragPath}");
+            if (File.Exists(vertPath) && File.Exists(fragPath)) return true;
+            if (!DebugState.DebugLow)
                 return false;
-            }
+            Scriptorium.Warn("Path for vertex / fragment shader does not exists");
+            Scriptorium.Warn($"Vertex path: {vertPath}");
+            Scriptorium.Warn($"Fragment path: {fragPath}");
+            return false;
 
-            return true;
         }
 
         private static bool CompileShader(int shader)
@@ -156,9 +152,7 @@ namespace Dazed.Vitals.Rendering
 
             GL.GetProgram(program, GetProgramParameterName.LinkStatus, out var code);
             if (code != (int)All.True)
-            {
                 throw new Exception($"Error occurred whilst linking Program({program})");
-            }
         }
 
         public void Use() => GL.UseProgram(_handle);
@@ -186,7 +180,7 @@ namespace Dazed.Vitals.Rendering
         /// </summary>
         /// <param name="name"></param>
         /// <param name="data"></param>
-        internal void SetMatrix4NR(string name, Matrix4 data)
+        internal void SetMatrix4NoReference(string name, Matrix4 data)
         {
             Use();
             GL.UniformMatrix4(_uniformLocations[name], true, ref data);
@@ -230,7 +224,7 @@ namespace Dazed.Vitals.Rendering
 
         internal void SetInterpretedValue(string name, object value)
         {
-            //Might need to replace this with a quick lookup dictionary that directly gives the required
+            //TODO: Might need to replace this with a quick lookup dictionary that directly gives the required
             //function for the type
             Type type = value.GetType();
             if (type == typeof(float))
@@ -246,7 +240,7 @@ namespace Dazed.Vitals.Rendering
             else if (type == typeof(Color4))
                 SetVector4(name, (Color4)value);
             else if (type == typeof(Matrix4))
-                SetMatrix4NR(name, (Matrix4)value);
+                SetMatrix4NoReference(name, (Matrix4)value);
         }
 
         ~Shader()

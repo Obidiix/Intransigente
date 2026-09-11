@@ -1,4 +1,5 @@
-﻿using Dazed.Vitals.Rendering;
+﻿using Dazed.Vitals.Content;
+using Dazed.Vitals.Rendering;
 using Newtonsoft.Json;
 using OpenTK.Mathematics;
 
@@ -6,29 +7,26 @@ namespace Dazed.Vitals
 {
     public class Font
     {
-        public readonly Texture2D _fontTexture;
-        public readonly int _charHeight, _charWidth;
-        private readonly Dictionary<char, Vector2> _charTexPos;
-        public readonly float _characterAspectRatio;
+        public readonly Texture2D FontTexture;
+        private readonly Dictionary<char, Vector2> _charTexPos = new();
+        public readonly float CharacterAspectRatio;
 
-        public int CharAmountX => Nx;
-        public int CharAmountY => Ny;
+        private int CharAmountX => _nx;
+        private int CharAmountY => _ny;
+        private readonly int _nx, _ny;
 
-        public Vector2 TextureCharScale => _texCharScale;
-        private readonly Vector2 _texCharScale;
+        public Vector2 TextureCharScale { get; }
 
-        private readonly int Nx, Ny;
+        private static readonly Dictionary<string, Font?> FontInstances = new();
 
-        private readonly static Dictionary<string, Font> _fontInstances = new();
-
-        public static Font GetFontInstance(string fontDataPath)
+        public static Font GetFontInstance(IdentifiedAsset asset)
         {
-            if (!_fontInstances.TryGetValue(fontDataPath, out Font f))
+            if (!FontInstances.TryGetValue(asset.RelativePath, out var font))
             {
-                f = new Font(fontDataPath);
-                _fontInstances.Add(fontDataPath, f);
+                font = new Font(asset.RelativePath);
+                FontInstances.Add(asset.RelativePath, font);
             }
-            return f;
+            return font ?? throw new Exception("Font failed to be created with asset: " + asset.ToString());
         }
 
         private Font(string fontDataPath)
@@ -37,32 +35,36 @@ namespace Dazed.Vitals
             string content = File.ReadAllText(fontDataPath);
             FontData data = JsonConvert.DeserializeObject<FontData>(content);
 
-            _fontTexture = new(data.TextureRelativePath, true);
-            _charWidth = data.CharWidth;
-            _charHeight = data.CharHeight;
+            FontTexture = new Texture2D(data.TextureRelativePath, true);
+            var charWidth = data.CharWidth;
+            var charHeight = data.CharHeight;
 
-            _characterAspectRatio = _charWidth / (float)_charHeight;
+            CharacterAspectRatio = charWidth / (float)charHeight;
 
-            _charTexPos = new();
             //Number of characters in X
-            Nx = (int)(_fontTexture.Width / (float)data.CharWidth);
+            _nx = (int)(FontTexture.Width / (float)data.CharWidth);
             //Number of characters in Y
-            Ny = (int)(_fontTexture.Height / (float)data.CharHeight);
+            _ny = (int)(FontTexture.Height / (float)data.CharHeight);
          
             int currentX = 0, currentY = 0;
-            for(int i = 0; i < data.CharOrder.Length; i++)
+            foreach (var t in data.CharOrder)
             {
-                if (currentX == Nx)
+                if (currentX == _nx)
                 {
                     currentX = 0;
                     currentY++;
                 }
                 //TEMPORARY PLACED TO ALLOW CAPS ONLY FONT
-                char c = char.ToLower(data.CharOrder[i]);
+                char c = char.ToLower(t);
                 _charTexPos.Add(c, new(currentX, currentY));
                 currentX++;
             }
-            _texCharScale = new Vector2(1 / (float)CharAmountX, 1 / (float)CharAmountY);
+            TextureCharScale = new Vector2(1 / (float)CharAmountX, 1 / (float)CharAmountY);
+        }
+
+        public Font(int charWidth)
+        {
+            var charWidth1 = charWidth;
         }
 
         public Vector2 GetCharPosInAtlas(char c, bool normalized = true)
@@ -75,7 +77,7 @@ namespace Dazed.Vitals
                 return Vector2.Zero;
             }
             if (normalized)
-                pos = new(pos.X / Nx, pos.Y / Ny);
+                pos = new Vector2(pos.X / _nx, pos.Y / _ny);
             return pos;
         }
     }

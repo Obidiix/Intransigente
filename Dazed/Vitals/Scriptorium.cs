@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace Dazed.Vitals
 {
@@ -15,11 +16,11 @@ namespace Dazed.Vitals
                 Console.WriteLine(message.EndWithPoint());
             OnEntryRecord?.Invoke("Message: " + message);
         }
-        public static void Warn(object obj) => Warn(obj.ToString());
+        public static void Warn(object obj) => Warn(obj.ToString()!);
         public static void Warn(string message)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(DateTime.Now.ToString() + " - ");
+            Console.Write(DateTime.Now.ToString(CultureInfo.InvariantCulture) + " - ");
             if (string.IsNullOrEmpty(message))
                 Console.WriteLine("Null.");
             else
@@ -28,7 +29,7 @@ namespace Dazed.Vitals
             OnEntryRecord?.Invoke("Warning: " + message);
         }
         public static void Warn(int entry) => Warn(entry.ToString());
-        public static void Error(object obj) => Error(obj.ToString());
+        public static void Error(object obj) => Error(obj.ToString()!);
         public static void Error(string message)
         {
             Console.ForegroundColor = ConsoleColor.Red;
