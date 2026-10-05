@@ -19,20 +19,30 @@ namespace DazedGUITools.Windows
                 ImGui.TextColored(Vector4Colors.Red, "Please enter a proper path!");
         }
 
-        protected void InputFile(string label, ref string result)
+        protected bool InputFile(string label, ref string result)
         {
+            bool modified = false;
             if (ImGui.Button("Search"))
+            {
                 result = FileSearching.OpenFileSearch();
+                modified = true;
+            }
             ImGui.SameLine();
             ImGui.InputText(label, ref result, 1024);
+            return modified;
         }
 
-        protected void InputDirectory(string label, ref string result)
+        protected bool InputDirectory(string label, ref string result)
         {
+            bool modified = false;
             if (ImGui.Button("Search"))
+            {
                 result = FileSearching.OpenFolderSearch();
+                modified = true;
+            }
             ImGui.SameLine();
             ImGui.InputText(label, ref result, 1024);
+            return modified;
         }
     }
 }

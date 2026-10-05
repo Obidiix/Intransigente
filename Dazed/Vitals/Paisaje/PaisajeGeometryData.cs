@@ -15,8 +15,9 @@ public readonly struct PaisajeGeometryData(float[] vertices, uint[] indices)
         return all;
     }
 
-    internal static PaisajeGeometryData RetrieveGeometryData(object[] all)
+    internal static PaisajeGeometryData RetrieveGeometryData(ElementData Data)
     {
+        var all = Data.Data;
         List<float> vertices = [.. all.TakeWhile(v => v is not uint).Cast<float>()];
         
         var indices = new uint[all.Length - vertices.Count];

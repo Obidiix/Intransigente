@@ -1,6 +1,10 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using System.Numerics;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using System.Reflection.Metadata;
+using Vector2 = OpenTK.Mathematics.Vector2;
+using Vector3 = OpenTK.Mathematics.Vector3;
+using Vector4 = OpenTK.Mathematics.Vector4;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -8,15 +12,18 @@ namespace Dazed.Vitals.Rendering
     {
         private int _handle;
         private bool _isDisposed;
-        private static event Action? ReloadAllShaders;
+        internal static event Action? ReloadAllShaders;
+        internal static event Action? AfterShaderReload;
 
         private string _pathFrag, _pathVert;
         private readonly Dictionary<string, int> _uniformLocations = new();
-        
+
+        private readonly Dictionary<Type, Action<string, object>> ValueAssignments = [];
+
         public static Shader GetShaderInstance(string path, bool pathIsAbsolute = false)
         {
-            string vertexPath = path + PathUtils.VertexShaderFileExtension;
-            string fragmentPath = path + PathUtils.FragmentShaderFileExtension;
+            string vertexPath = path + CommonPaths.VertexShaderFileExtension;
+            string fragmentPath = path + CommonPaths.FragmentShaderFileExtension;
             if (!pathIsAbsolute)
             {
                 vertexPath = Path.Combine(PathUtils.ShadersDirectory, vertexPath);
@@ -49,15 +56,29 @@ namespace Dazed.Vitals.Rendering
         private Shader(string vertPath, string fragPath)
         {
             InitializeWithPaths(vertPath, fragPath);
+            SetUpValueAssignments();
             ReloadAllShaders += ReloadShader;
         }
 
-        internal string[] GetUniformsKeys()
+        private void SetUpValueAssignments()
         {
-            return _uniformLocations.Keys.ToArray();
+            ValueAssignments.Add(typeof(float), SetFloat);
+            ValueAssignments.Add(typeof(Vector2), SetVector2);
+            ValueAssignments.Add(typeof(Vector3), SetVector3);
+            ValueAssignments.Add(typeof(Vector4), SetVector4);
+            ValueAssignments.Add(typeof(Color4), SetColor4);
+            ValueAssignments.Add(typeof(Matrix4), SetMatrix4);
+            ValueAssignments.Add(typeof(bool), SetBool);
         }
 
-        public static void ReloadShaders() => ReloadAllShaders?.Invoke();
+        internal string[] GetUniformsKeys() => _uniformLocations.Keys.ToArray();
+
+        public static void Reload()
+        {
+            ReloadAllShaders?.Invoke();
+            AfterShaderReload?.Invoke();
+            Artist.ReloadScreenInfo();
+        }
 
         private void ReloadShader() => InitializeWithPaths(_pathVert, _pathFrag);
 
@@ -75,24 +96,15 @@ namespace Dazed.Vitals.Rendering
             var vertexShader = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vertexShader, vertexShaderSource);
             if (!CompileShader(vertexShader))
-            {
-                if (_handle == 0)
-                    throw new Exception("Check console for more information");
-                return;
-            }
+                throw new Exception("Check console for more information");
 
             var fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
             GL.ShaderSource(fragmentShader, fragmentShaderSource);
             if (!CompileShader(fragmentShader))
-            {
-                if (_handle == 0)
-                    throw new Exception("Check console for more information");
-                return;
-            }
+                throw new Exception("Check console for more information");
 
-            if (_handle != 0)
-                GL.DeleteProgram(_handle);
-            _handle = GL.CreateProgram();
+            if (_handle == 0)
+                _handle = GL.CreateProgram();
 
             GL.AttachShader(_handle, vertexShader);
             GL.AttachShader(_handle, fragmentShader);
@@ -141,8 +153,7 @@ namespace Dazed.Vitals.Rendering
             if (code != (int)All.True)
             {
                 var infoLog = GL.GetShaderInfoLog(shader);
-                Scriptorium.LogException(new Exception($"Error occurred whilst compiling Shader({shader}).\n\n{infoLog}"));
-                return false;
+                throw new Exception($"Error occurred whilst compiling Shader({shader}).\n\n{infoLog}");
             }
             return true;
         }
@@ -169,78 +180,68 @@ namespace Dazed.Vitals.Rendering
             GC.SuppressFinalize(this);
         }
 
-        internal void SetFloat(string name, float value)
+        internal void SetFloat(string name, object value)
         {
             Use();
-            GL.Uniform1(_uniformLocations[name], value);
+            GL.Uniform1(_uniformLocations[name], (float)value);
         }
 
-        /// <summary>
-        /// Sets a matrix uniform without needing to reference it
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="data"></param>
-        internal void SetMatrix4NoReference(string name, Matrix4 data)
+        internal void SetMatrix4(string name, object data)
         {
             Use();
-            GL.UniformMatrix4(_uniformLocations[name], true, ref data);
+            if (data.GetType() == typeof(Matrix4x4))
+                data = MathTeacher.ToOpenTkMatrix4((Matrix4x4)data);
+            var matrix4 = (Matrix4)data;
+            GL.UniformMatrix4(_uniformLocations[name], true, ref matrix4);
         }
 
-        internal void SetMatrix4(string name, ref Matrix4 data)
+        internal void SetVector3(string name, object vector3)
         {
             Use();
-            GL.UniformMatrix4(_uniformLocations[name], true, ref data);
+            GL.Uniform3(_uniformLocations[name], (Vector3)vector3);
         }
 
-        internal void SetVector3(string name, Vector3 vector3)
+        internal void SetVector2(string name, object vector2)
         {
             Use();
-            GL.Uniform3(_uniformLocations[name], vector3);
+            GL.Uniform2(_uniformLocations[name], (Vector2)vector2);
         }
 
-        internal void SetVector2(string name, Vector2 vector2)
+        internal void SetVector4(string name, object vector4)
         {
             Use();
-            GL.Uniform2(_uniformLocations[name], vector2);
+            GL.Uniform4(_uniformLocations[name], (Vector4)vector4);
         }
 
-        internal void SetVector4(string name, Vector4 vector4)
+        internal void SetColor4(string name, object color4)
         {
             Use();
-            GL.Uniform4(_uniformLocations[name], vector4);
+            if(color4.GetType() == typeof(Color))
+                color4 = (Color4)((Color)color4);
+            GL.Uniform4(_uniformLocations[name], (Color4)color4);
         }
 
-        internal void SetVector4(string name, Color4 color4)
+        internal void SetBool(string name, object value)
         {
             Use();
-            GL.Uniform4(_uniformLocations[name], color4);
+            GL.Uniform1(_uniformLocations[name], (bool)value ? 1 : 0);
         }
 
-        internal void SetBool(string name, bool value)
+        internal void SetInterpretedValue(string name, object? value)
         {
-            Use();
-            GL.Uniform1(_uniformLocations[name], value ? 1 : 0);
-        }
-
-        internal void SetInterpretedValue(string name, object value)
-        {
-            //TODO: Might need to replace this with a quick lookup dictionary that directly gives the required
-            //function for the type
+            if (value == null)
+            {
+                if (DebugState.DebugFull) Scriptorium.Warn($"Null value returned for shader's uniform {name}");
+                return;
+            }
+            //TODO: Might need to replace this with a quick lookup dictionary that directly gives the required function for the type
             Type type = value.GetType();
-            if (type == typeof(float))
-                SetFloat(name, (float)value);
-            else if (type == typeof(Vector2))
-                SetVector2(name, (Vector2)value);
-            else if (type == typeof(Vector3))
-                SetVector3(name, (Vector3)value);
-            else if (type == typeof(Vector4))
-                SetVector4(name, (Vector4)value);
-            else if (type == typeof(Color4))
-                SetVector4(name, (Color4)value);
-            else if (type == typeof(Color4))
-                SetVector4(name, (Color4)value);
-            else if (type == typeof(Matrix4))
-                SetMatrix4NoReference(name, (Matrix4)value);
+            if(ValueAssignments.TryGetValue(type, out var assignment))
+            {
+                assignment(name, value);
+                return;
+            }
+            throw new ArgumentException($"Value {value} is not assignable to type {type}, or does not have an assignment function");
         }
 
         ~Shader()

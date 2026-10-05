@@ -2,5 +2,7 @@
 
 public enum PaisajeElementType
 {
-	
+	Brush,
+	DynamicBrush,
+	Entity
 }

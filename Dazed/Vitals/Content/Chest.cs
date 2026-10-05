@@ -1,9 +1,5 @@
 ﻿using Assimp;
 using Dazed.Vitals.Exceptions;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dazed.Vitals.Content
 {
@@ -77,8 +73,7 @@ namespace Dazed.Vitals.Content
             if (!File.Exists(path))
                 throw new NullReferenceException();
 
-            var content = File.ReadAllText(path);
-            var contentTable = JsonConvert.DeserializeObject<SerializedContentTable>(content);
+            var contentTable = Cereal.LoadData<SerializedContentTable>(path);
 
             if (contentTable == null)
                 throw new NullReferenceException();

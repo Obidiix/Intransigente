@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -7,11 +8,8 @@ namespace Dazed.Vitals
 {
     public static class PathUtils
     {
-        public const string VertexShaderFileExtension = ".vert";
-        public const string FragmentShaderFileExtension = ".frag";
-
         public static string BaseDirectory => AppDomain.CurrentDomain.BaseDirectory;
-        public static string ShadersDirectory => Path.Combine(BaseDirectory, "shaders");
+        public static string ShadersDirectory => Path.Combine(BaseDirectory, CommonPaths.ShadersFolderName);
 
         public static string GetExtension(this string value)
         {
@@ -75,7 +73,7 @@ namespace Dazed.Vitals
                 }
                 else
                 {
-                    if (tempStringBuilder.ToString().ToLower() == "resources")
+                    if (tempStringBuilder.ToString().ToLower() == CommonPaths.ResourcesFolderName)
                     {
                         sb.Insert(0, tempStringBuilder);
                         sb.Insert(0, @"\");
@@ -136,6 +134,23 @@ namespace Dazed.Vitals
             return segments.All(segment => segment.IndexOfAny(Path.GetInvalidFileNameChars()) == -1);
         }
 
-        internal static string BaseDirectoryCombine(string s2) => Path.Combine(BaseDirectory, s2);
+        public static string BaseDirectoryCombine(string s2) => Path.Combine(BaseDirectory, s2);
+
+        public static void GetPNGSize(string path, out int x, out int y)
+        {
+            if (!path.EndsWith(".png"))
+                throw new ArgumentException($"The provided path <{path}> is not a valid png file");
+            BinaryReader br = new BinaryReader(File.OpenRead(path));
+            br.BaseStream.Position = 16;
+            byte[] widthbytes = new byte[sizeof(int)];
+            for (int i = 0; i < sizeof(int); i++) widthbytes[sizeof(int) - 1 - i] = br.ReadByte();
+            int width = BitConverter.ToInt32(widthbytes, 0);
+            byte[] heightbytes = new byte[sizeof(int)];
+            for (int i = 0; i < sizeof(int); i++) heightbytes[sizeof(int) - 1 - i] = br.ReadByte();
+            int height = BitConverter.ToInt32(heightbytes, 0);
+            br.Dispose();
+            x = width;
+            y = height;
+        }
     }
 }

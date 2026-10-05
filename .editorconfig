@@ -1,4 +1,1 @@
-﻿[*.cs]
-
-# CS8601: Posible asignación de referencia nula
-dotnet_diagnostic.CS8601.severity = silent
+﻿

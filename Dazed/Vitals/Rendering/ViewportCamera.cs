@@ -2,9 +2,9 @@
 
 namespace Dazed.Vitals.Rendering
 {
-    public class Camera : IDisposable
+    public class ViewportCamera : IDisposable
     {
-        public static Camera? MainCamera { get; private set; }
+        public static ViewportCamera? MainCamera { get; private set; }
         public bool IsMainCamera { get; private set; }
         public float FieldOfView
         {
@@ -46,7 +46,7 @@ namespace Dazed.Vitals.Rendering
         
         public Frustum ViewFrustum { get; private set; }
 
-        public Camera(float fovInDegrees)
+        public ViewportCamera(float fovInDegrees)
         {
             Transform = new Transform();
             _fov = fovInDegrees;
@@ -59,7 +59,17 @@ namespace Dazed.Vitals.Rendering
                 MainCamera = this;
                 IsMainCamera = true;
             }
-            Artist.AddCamera(this);
+            else
+                Artist.AssignSecondaryCamera(this);
+            Transform.TransformationChange += ReloadView;
+            ReloadView(default);
+            Phone.SubscribeToApplicationQuit(Dispose);
+        }
+
+        private void ReloadView(Matrix4x4 obj)
+        {
+            _viewMatrix = Matrix4x4.CreateLookAt(Transform.Position, (Transform.Position - Transform.Forward), Transform.Up);
+            RecalculateViewFrustum();
         }
 
         private void ReloadProjection()
@@ -68,24 +78,14 @@ namespace Dazed.Vitals.Rendering
             RecalculateViewFrustum();
         }
 
-        private void RecalculateViewFrustum()
-        {
-            ViewFrustum = new Frustum(_fov, Transform.Position, Transform.Forward, Transform.Right, Transform.Up, Artist.AspectRatio, _nearClipPlane, _farClipPlane);
-        }
+        private void RecalculateViewFrustum() => ViewFrustum = new Frustum(_viewMatrix * _projMatrix);
 
-        public void Move(System.Numerics.Vector3 movement, float factor = 1)
+        public void Move(Vector3 movement, float factor = 1)
         {
-            if (movement == System.Numerics.Vector3.Zero)
+            if (movement == Vector3.Zero)
                 return;
-            Vector3 normalizedMovement = Transform.Forward * movement.Z + Transform.Right * movement.X;
+            Vector3 normalizedMovement = Transform.Forward * movement.Z + Transform.Up * movement.Y  + Transform.Right * movement.X;
             Transform.Position += Vector3.Normalize(normalizedMovement) * factor;
-        }
-
-        public void PreDrawCall()
-        {
-            _viewMatrix = Matrix4x4.CreateLookAt((Vector3)Transform.Position, (Vector3)(Transform.Position - Transform.Forward), Transform.Up);
-            //TODO: Should not be executed each frame
-            RecalculateViewFrustum();
         }
 
         public void Dispose()
@@ -96,8 +96,11 @@ namespace Dazed.Vitals.Rendering
                     Scriptorium.Warn("Main camera disposed");
                 MainCamera = null;
             }
+            else
+                Artist.RemoveSecondaryCamera();
+            Transform.TransformationChange -= ReloadView;
             Artist.OnWidowResize -= ReloadProjection;
-            Artist.RemoveCamera(this);
+            Phone.UnSubscribeToApplicationQuit(Dispose);
             GC.SuppressFinalize(this);
         }
     }

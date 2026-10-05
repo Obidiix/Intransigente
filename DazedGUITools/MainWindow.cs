@@ -1,5 +1,4 @@
-﻿using Dazed.Vitals;
-using Dazed.Vitals.Content;
+﻿using Dazed.Vitals.Content;
 using DazedGUITools.Windows;
 using ImGuiNET;
 using Newtonsoft.Json;
@@ -14,7 +13,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace DazedGUITools
 {
@@ -208,8 +206,21 @@ namespace DazedGUITools
 
         protected override void OnClosing(CancelEventArgs e)
         {
+            if(!ForceClosing)
+                if (ActiveWindows.Any(win => win.IsDirty))
+                {
+                    ShowSavePromt();
+                    return;
+                }
             base.OnClosing(e);
         }
+
+        private void ShowSavePromt()
+        {
+            //TODO: Add warning for unsaved changes, and the option to quit anyways
+        }
+
+        public bool ForceClosing { get; set; }
 
         public readonly static DebugProc DebugProcCallback = Window_DebugProc;
         private static void Window_DebugProc(DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr messagePtr, IntPtr userParam)
@@ -270,6 +281,11 @@ namespace DazedGUITools
             else
                 ActiveWindows.Add(window);
             OccupiedWindowName.Add(window._uniqueTitle);
+        }
+
+        public static string ProjectFolderCombine(string s2)
+        {
+            return Path.Combine(_projectFolder, s2);
         }
     }
 }

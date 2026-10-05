@@ -1,9 +1,8 @@
 ﻿using System.Collections.ObjectModel;
-using Newtonsoft.Json;
 
 namespace Dazed.Vitals.Localization;
 
-public static class Localization
+public static class Locals
 {
 	public static SerializedLanguageInfo CurrentLanguage { get; private set; }
 	private static readonly ReadOnlyDictionary<string, int> StringsTable;
@@ -12,22 +11,21 @@ public static class Localization
 	private static readonly Dictionary<string, string> LanguageInfoPaths;
 	public static readonly SerializedLanguageInfo[] AvailableLanguages;
 
-	public const string LocalizationFolderName = "localization";
-	public const string MainStringTablePath = LocalizationFolderName + "/s.mainTable";
+	public const string MainStringTablePath = CommonPaths.LocalizationFolderName + "/s.mainTable";
 	public const string LocalInfoExtension = ".info";
 	public const string StringTableFileExtension = ".st";
 	// private static readonly string ImageTableFileExtension = ".it";
 
 	public static event Action? OnLanguageChange;
 	
-	static Localization()
+	static Locals()
 	{
 		LanguageInfoPaths = new Dictionary<string, string>();
 
 		AssignMainStringTable(out StringsTable);
 
 		RetrieveTablesPath(out LanguageInfoPaths, out AvailableLanguages);
-		//TODO: default to a language and make the player choose their preferred one
+		//TODO: make the player choose their preferred language
 		CurrentLanguage = AvailableLanguages[0];
 		UpdateValues();
 	}
@@ -35,8 +33,7 @@ public static class Localization
 	private static void AssignMainStringTable(out ReadOnlyDictionary<string, int> stringTable)
 	{
 		var path = PathUtils.BaseDirectoryCombine(MainStringTablePath);
-		var content = File.ReadAllText(path);
-		var mainTable = JsonConvert.DeserializeObject<SerializedMainStringTable>(content);
+		var mainTable = Cereal.LoadData<SerializedMainStringTable>(path);
 
 		var dictionary = new Dictionary<string, int>();
 
@@ -47,9 +44,8 @@ public static class Localization
 
 	private static void UpdateValues()
 	{
-		var stringTablePath = LanguageInfoPaths[CurrentLanguage.ShortName];
-		var stringTableContent = File.ReadAllText(stringTablePath);
-		var stringTable = JsonConvert.DeserializeObject<SerializedStringTable>(stringTableContent);
+		var stringTablePath = PathUtils.BaseDirectoryCombine(Path.Combine(CommonPaths.LocalizationFolderName, CurrentLanguage.StringTablePath));
+		var stringTable = Cereal.LoadData<SerializedStringTable>(stringTablePath);
 		_stringValues = new string[stringTable.Content.Length];
 		for(int i = 0; i < stringTable.Content.Length; i++)
 			_stringValues[i] = stringTable.Content[i];
@@ -59,7 +55,7 @@ public static class Localization
 	{
 		var langInfoPaths = new Dictionary<string, string>();
 		List<string> filesPaths = [];
-		DirectoryInfo directoryInfo = new(PathUtils.BaseDirectoryCombine(LocalizationFolderName));
+		DirectoryInfo directoryInfo = new(PathUtils.BaseDirectoryCombine(CommonPaths.LocalizationFolderName));
 		if (!directoryInfo.Exists)
 			throw new DirectoryNotFoundException($"Directory {directoryInfo.FullName} does not exist");
 		filesPaths.AddRange(from file in directoryInfo.GetFiles() where file.Name.EndsWith(LocalInfoExtension) select file.FullName);
@@ -67,8 +63,7 @@ public static class Localization
 		var info = new SerializedLanguageInfo[filesPaths.Count];
 		for (var i = 0; i < filesPaths.Count; i++)
 		{
-			var content = File.ReadAllText(filesPaths[i]);
-			var languageInfo = JsonConvert.DeserializeObject<SerializedLanguageInfo>(content);
+			var languageInfo = Cereal.LoadData<SerializedLanguageInfo>(filesPaths[i]);
 			info[i] = languageInfo;
 			langInfoPaths.Add(languageInfo.ShortName, filesPaths[i]);
 		}

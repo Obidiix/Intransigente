@@ -2,5 +2,5 @@
 
 public interface ICullableObject
 {
-	
+	public bool IsInFrustum(Frustum frustum);
 }

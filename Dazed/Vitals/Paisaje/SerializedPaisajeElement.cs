@@ -2,23 +2,19 @@
 
 namespace Dazed.Vitals.Paisaje;
 
-public readonly struct SerializedPaisajeElement
+[method: JsonConstructor]
+public readonly struct SerializedPaisajeElement(
+    string elementName,
+    string elementType,
+    ElementData elementData,
+    PaisajeElementType paisajeElementType)
 {
     [JsonProperty("n")]
-    public readonly string ElementName;
+    public readonly string ElementName = elementName;
     [JsonProperty("t")]
-    public readonly string ElementType;
+    public readonly string ElementType = elementType;
     [JsonProperty("d")]
-    public readonly object[] ElementData;
+    public readonly ElementData ElementData = elementData;
     [JsonProperty("c")]
-    public readonly bool ElementIsGeometry;
-
-    [JsonConstructor]
-    public SerializedPaisajeElement(string elementName, string elementType, object[] elementData, bool elementIsGeometry)
-    {
-        ElementName = elementName;
-        ElementType = elementType;
-        ElementData = elementData;
-        ElementIsGeometry = elementIsGeometry;
-    }
+    public readonly PaisajeElementType PaisajeElementType = paisajeElementType;
 }

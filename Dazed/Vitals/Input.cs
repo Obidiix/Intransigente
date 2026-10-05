@@ -9,8 +9,8 @@ namespace Dazed.Vitals
 {
     internal static class Input
     {
-        private static KeyboardState _kState;
-        private static MouseState _mState;
+        private static KeyboardState _kState = null!;
+        private static MouseState _mState = null!;
 
         public static Vector2 PreviousMousePosition => _previousMousePosition;
         private static Vector2 _previousMousePosition;
@@ -55,5 +55,8 @@ namespace Dazed.Vitals
 
         public static bool WasKeyReleased(Keys key) => _kState.IsKeyReleased(key);
         public static bool WasKeyReleased(MouseButton button) => _mState.IsButtonReleased(button);
+        
+        public static bool KeyJustPressed(Keys key) => _kState.IsKeyPressed(key);
+        public static bool KeyJustPressed(MouseButton button) => _mState.IsButtonPressed(button);
     }
 }

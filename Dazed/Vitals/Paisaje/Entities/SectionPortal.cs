@@ -1,10 +1,33 @@
-﻿namespace Dazed.Vitals.Paisaje.Entities;
+﻿using System.Numerics;
+using Dazed.Vitals.Rendering;
+
+namespace Dazed.Vitals.Paisaje.Entities;
 /// <summary>
 /// Separates paisaje's sections and allows them to render only if the portal is visible by the camera's view frustum
 /// </summary>
-public class SectionPortal
+[BrushElement("Base/Portal")]
+public class SectionPortal : PaisajeDynamic, ICullableObject
 {
-    //TODO: Add bounding box, or bounding plane(?).
-    //TODO: Add a bool function that indicates whether it is seen by the frustum, and if so, return the portals related to this one.
+    [PaisajeField]
+    private Vector3 min, max;
     
+    public Transform? Transform => _transform;
+    private Transform? _transform;
+
+    public bool IsEnabled { get; set; } = true;
+    private BoundingBox? _boundingBox;
+    
+    public bool IsInFrustum(Frustum frustum) => !IsDestroyed && IsEnabled && _boundingBox!.IsInFrustum(frustum);
+
+    protected override void OnCreation()
+    {
+        _transform = new Transform();
+        _boundingBox = new BoundingBox(_transform, min, max);
+    }
+
+    protected override void OnDestruction()
+    {
+        _boundingBox = null;
+        _transform = null;
+    }
 }

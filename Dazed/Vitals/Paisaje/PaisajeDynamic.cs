@@ -2,24 +2,26 @@
 
 namespace Dazed.Vitals.Paisaje;
 /// <summary>
-/// The parts of the Paisaje that contain more logic than a <see cref="PaisajeGeometry"/> (those being reserved for geometry only)
+/// The parts of the Paisaje that contain more logic than a <see cref="PaisajeGeometry"/>
 /// </summary>
-public abstract class PaisajeElement
+public abstract class PaisajeDynamic
 {
+    public Transform Transform { get; private set; }
     public string Name { get; internal set; } = null!;
     protected abstract void OnCreation();
     protected abstract void OnDestruction();
     
     public bool IsDestroyed { get; private set; }
     
-    public static PaisajeElement Create(Type type, string name, ElementData data)
+    public static PaisajeDynamic Create(Type type, string name, ElementData data)
     {
         var rawObj = Activator.CreateInstance(type)!;
-        ((PaisajeElement)rawObj).Name =  name;
-        ((PaisajeElement)rawObj).InterpretData(type, data);
-        ((PaisajeElement)rawObj).OnCreation();
-        Phone.SubscribeToApplicationQuit(((PaisajeElement)rawObj).Destroy);
-        return (PaisajeElement)rawObj;
+        ((PaisajeDynamic)rawObj).Name =  name;
+        ((PaisajeDynamic)rawObj).InterpretData(type, data);
+        ((PaisajeDynamic)rawObj).Transform = new Transform();
+        ((PaisajeDynamic)rawObj).OnCreation();
+        Phone.SubscribeToApplicationQuit(((PaisajeDynamic)rawObj).Destroy);
+        return (PaisajeDynamic)rawObj;
     }
 
     internal void Destroy()
@@ -35,10 +37,10 @@ public abstract class PaisajeElement
     {
         for (var i = 0; i < data.Fields.Length; i++)
         {
-            if (data.Fields[i].StartsWith("param_"))
-                InterpretAsParameter(data.Fields[i], data.Data[i], type);
+            if (data.Fields[i].FieldName.StartsWith("param_"))
+                InterpretAsParameter(data.Fields[i].FieldName, data.Data[data.Fields[i].ObjectFieldIndex], type);
             else
-                InterpretAsField(data.Fields[i], data.Data[i], type);
+                InterpretAsField(data.Fields[i].FieldName, data.Data[data.Fields[i].ObjectFieldIndex], type);
         }
     }
 

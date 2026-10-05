@@ -1,8 +1,8 @@
 ﻿using Dazed.Vitals.Content;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using System.Drawing;
+using Dazed.Vitals.Rendering.RenderDebug;
+using OpenTK.Mathematics;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -25,7 +25,7 @@ namespace Dazed.Vitals.Rendering
         public static float RenderingScale { get => _renderingScale; set { _renderingScale = value < 0.1f ? 0.1f : value; RefreshRenderingInfo(); } }
         private static float _renderingScale = 1f;
 
-        private static Vector2i RenderSize { get => _renderSize; }
+        private static Vector2i RenderSize => _renderSize;
         private static Vector2i _renderSize = new(1, 1);
 
         public static float NormalizedHeight => _normalizedHeight;
@@ -40,8 +40,8 @@ namespace Dazed.Vitals.Rendering
         public static float RenderAspectRatio => _renderAspectRatio;
         private static float _renderAspectRatio;
 
-        public static Vector2 WinPos => _winPos;
-        private static Vector2 _winPos;
+        public static Vector2i WinPos => _winPos;
+        private static Vector2i _winPos;
 
         public static event Action OnWidowResize = null!;
 
@@ -49,18 +49,24 @@ namespace Dazed.Vitals.Rendering
         private static readonly Renderable?[] AllRender = new Renderable[RenderElementsLimit];
         private static readonly RenderingPass[] RenderPasses = new RenderingPass[RenderElementsLimit];
 
-        private static readonly List<Camera> Cameras = [];
-        private static readonly CameraPriorityComparer Comparer = new();
+        private static ViewportCamera? _secondaryCamera;
 
-        private static readonly List<Renderable> GeometryFirst = new();
-        private static readonly List<Renderable> GeometrySecond = new();
-        private static readonly List<Renderable> Gui = new();
+        private static readonly List<TemporalRenderable> TemporalRenderables = new();
+        
+        private static readonly List<int> GeometryFirst = new();
+        private static readonly List<int> GeometrySecond = new();
+        private static readonly List<int> Gui = new();
         private static bool _modifiedRendered = true;
 
         private static int _currentBindedPosition;
 
         private static readonly Texture2D ScreenEffectTexture2D;
 
+        public static void ReloadScreenInfo()
+        {
+            SetUpFrameBuffer();
+            OnWidowResize?.Invoke();
+        }
         private static void RefreshRenderingInfo()
         {
             _renderSize = new((int)(_width * _renderingScale), (int)(_height * _renderingScale));
@@ -69,8 +75,7 @@ namespace Dazed.Vitals.Rendering
             _normalizedHeight = 1 / (float)_height;
             _normalizedWidth = 1 / (float)_width;
 
-            SetUpFrameBuffer();
-            OnWidowResize?.Invoke();
+            ReloadScreenInfo();
         }
 
         public static void SetResolution(int width, int height)
@@ -82,7 +87,7 @@ namespace Dazed.Vitals.Rendering
             RefreshRenderingInfo();
         }
 
-        internal static void ReloadWindowPosition(Vector2 pos) => _winPos = pos;
+        internal static void ReloadWindowPosition(Vector2i pos) => _winPos = pos;
 
         static Artist()
         {
@@ -135,7 +140,7 @@ namespace Dazed.Vitals.Rendering
         {
             if(DebugState.DebugLow)
                 Scriptorium.Warn("Reloading all shader...");
-            Shader.ReloadShaders();
+            Shader.Reload();
         }
 
         internal static int AssignRendered(Renderable rendered)
@@ -144,7 +149,7 @@ namespace Dazed.Vitals.Rendering
                 throw new IndexOutOfRangeException("Drawn mesh limit exceeded, either increase arbitrary limit or check for duplicated meshes");
             RenderPasses[_currentBindedPosition] = rendered.RenderPass;
             AllRender[_currentBindedPosition++] = rendered;
-
+            
             _modifiedRendered = true;
             return _currentBindedPosition;
         }
@@ -155,23 +160,26 @@ namespace Dazed.Vitals.Rendering
             AllRender[bindPosition] = null;
         }
 
-        internal static void AddCamera(Camera camera)
+        internal static void AssignSecondaryCamera(ViewportCamera viewportCamera)
         {
-            Cameras.Add(camera);
-            ReorderCameras();
-        }
-
-        private static void ReorderCameras()
-        {
-            if (Cameras.Count <= 1)
+            if (_secondaryCamera != null)
+            {
+                if(DebugState.DebugMedium)
+                    Scriptorium.Warn("A secondary camera is already assigned and yet another one is trying to replace it.");
                 return;
-            Cameras.Sort(Comparer);
+            }
+            _secondaryCamera = viewportCamera;
         }
 
-        internal static void RemoveCamera(Camera camera)
+        internal static void RemoveSecondaryCamera()
         {
-            Cameras.Remove(camera);
-            ReorderCameras();
+            if (_secondaryCamera == null)
+            {
+                if(DebugState.DebugMedium)
+                    Scriptorium.Warn("A path of execution is trying to remove a secondary camera when it is not yet assigned.");
+                return;
+            }
+            _secondaryCamera = null;
         }
 
         internal static void DrawFrame(FrameEventArgs args)
@@ -204,23 +212,43 @@ namespace Dazed.Vitals.Rendering
 
             ArrangePasses();
 
-            for(int c = 0; c < Cameras.Count; c++)
+            RenderingData data;
+            //Main Camera
+            //Usually, should not be null
+            if (ViewportCamera.MainCamera != null)
             {
-                RenderingData data = new(Cameras[c].Projection, Cameras[c].View, (Vector3)Cameras[c].Transform.Position, Cameras[c].ViewFrustum);
-                if (Cameras[c].RenderingPasses.HasFlag(RenderingPass.geometryFirst))
+                data = new(ViewportCamera.MainCamera.Projection, ViewportCamera.MainCamera.View, ViewportCamera.MainCamera.Transform.Position, ViewportCamera.MainCamera.ViewFrustum);
+                GL.Clear(ClearBufferMask.DepthBufferBit);
+                RenderPass(RenderingPass.geometryFirst, data);
+                if (DebugState.DebugMedium)
                 {
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-                    RenderPass(RenderingPass.geometryFirst, ref data);
-                }
-                if (Cameras[c].RenderingPasses.HasFlag(RenderingPass.geometrySecond))
-                {
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-                    RenderPass(RenderingPass.geometrySecond, ref data);
+                    GL.Disable(EnableCap.DepthTest);
+                    GL.Disable(EnableCap.CullFace);
+                    DrawTemporal(data);
+                    GL.Enable(EnableCap.DepthTest);
+                    GL.Enable(EnableCap.CullFace);
                 }
             }
+            else if(DebugState.DebugMedium)
+                Scriptorium.Warn("Main camera is null!");
 
+            //Secondary Camera (if available)
+            if (_secondaryCamera != null)
+            {
+                data = new(_secondaryCamera.Projection, _secondaryCamera.View, _secondaryCamera.Transform.Position, _secondaryCamera.ViewFrustum);
+                GL.Clear(ClearBufferMask.DepthBufferBit);
+                RenderPass(RenderingPass.geometrySecond, data);
+            }
+            
             GL.Disable(EnableCap.DepthTest);
             GL.Disable(EnableCap.CullFace);
+        }
+
+        private static void DrawTemporal(in RenderingData data)
+        {
+            foreach (var t in TemporalRenderables)
+                t.Render(data);
+            TemporalRenderables.Clear();
         }
 
         private static void ArrangePasses()
@@ -233,72 +261,55 @@ namespace Dazed.Vitals.Rendering
             Gui.Clear();
             for(int i = 0; i < _currentBindedPosition; i++)
             {
-                if (AllRender == null)
+                if (AllRender[i] == null)
                     continue;
                 switch (RenderPasses[i])
                 {
                     case RenderingPass.geometryFirst:
-                        GeometryFirst.Add(AllRender[i]);
+                        GeometryFirst.Add(i);
                         break;
                     case RenderingPass.geometrySecond:
-                        GeometrySecond.Add(AllRender[i]);
+                        GeometrySecond.Add(i);
                         break;
                     case RenderingPass.userInterface:
-                        Gui.Add(AllRender[i]);
+                        Gui.Add(i);
                         break;
                 }
             }
         }
 
-        private static void RenderPass(RenderingPass pass, ref RenderingData data)
+        private static void RenderPass(RenderingPass pass, in RenderingData? data)
         {
-            List<Renderable> collection = null!;
+            List<int> indexes = null!;
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
-                    collection = GeometryFirst;
+                    indexes = GeometryFirst;
                     break;
                 case RenderingPass.geometrySecond:
-                    collection = GeometrySecond;
+                    indexes = GeometrySecond;
                     break;
                 case RenderingPass.userInterface:
-                    collection = Gui;
+                    indexes = Gui;
                     break;
             }
-            foreach(Renderable renderable in collection)
+            foreach(int index in indexes)
             {
-                if (!renderable.AllowRendering)
+                Renderable? r = AllRender[index];
+                if (r == null || !r.AllowRendering)
                     continue;
-                renderable.Render(data);
-            }
-        }
-
-        private static void RenderPass(RenderingPass pass)
-        {
-            List<Renderable> collection = null!;
-            switch (pass)
-            {
-                case RenderingPass.geometryFirst:
-                    collection = GeometryFirst;
-                    break;
-                case RenderingPass.geometrySecond:
-                    collection = GeometrySecond;
-                    break;
-                case RenderingPass.userInterface:
-                    collection = Gui;
-                    break;
-            }
-            foreach (Renderable renderable in collection)
-            {
-                if (!renderable.AllowRendering)
-                    continue;
-                renderable.Render(default);
+                r.Render(pass ==  RenderingPass.geometryFirst ? data!.Value : default);
             }
         }
 
         private static void GuiRendering()
         {
-            RenderPass(RenderingPass.userInterface);
+            RenderPass(RenderingPass.userInterface, null);
+        }
+
+        public static void QueueTemporal(TemporalRenderable temp)
+        {
+            TemporalRenderables.Add(temp);
         }
     }
 }

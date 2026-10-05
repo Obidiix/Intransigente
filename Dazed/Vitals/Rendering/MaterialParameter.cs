@@ -7,14 +7,14 @@ namespace Dazed.Vitals.Rendering
     internal sealed class MaterialParameter
     {
         private bool _changed;
-        private Type _type;
+        private Type? _type;
         private readonly string _name;
-        private object _value;
+        private object? _value;
 
         public bool Changed => _changed;
-        public Type Type => _type;
+        public Type? Type => _type;
         public string Name => _name;
-        public object Value => _value;
+        public object? Value => _value;
 
         public MaterialParameter(string name, object value)
         {
@@ -36,7 +36,7 @@ namespace Dazed.Vitals.Rendering
             _changed = true;
             _value = value;
         }
-        public void SetValue(object value)
+        public void SetValue(object? value)
         {
             if (value == null)
                 return;

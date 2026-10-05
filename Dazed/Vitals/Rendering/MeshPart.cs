@@ -1,16 +1,11 @@
-﻿using OpenTK.Graphics.OpenGL;
-using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Numerics;
+using OpenTK.Graphics.OpenGL;
 
 namespace Dazed.Vitals.Rendering
 {
-    public class MeshPart
+    public class MeshPart : Renderable
     {
-        private readonly float[] _arrayBufferData;
         private readonly uint[] _indices;
-        //private readonly bool _usesNormals;
         private readonly ContainedMeshData _containedMeshData;
         public Material? PartMaterial
         {
@@ -18,16 +13,16 @@ namespace Dazed.Vitals.Rendering
             set
             {
                 _partMaterial = value;
-                ReloadShaderData();
+                ReloadMaterialData();
             }
         }
         private Material? _partMaterial;
-        private readonly Matrix4 _meshMatrix;
+        private readonly Matrix4x4 _meshMatrix;
+        internal Matrix4x4 WorldMatrix { get; set; }
 
-        private readonly int _vertexCount;
         private readonly int _vertexArrayObject;
 
-        internal MeshPart(float[] vertPos, float[]? normals, float[]? textureCoordinates, uint[] indices, int vertexCount, Matrix4 localMeshMatrix, Material material)
+        internal MeshPart(float[] vertPos, float[]? normals, float[]? textureCoordinates, uint[] indices, int vertexCount, Matrix4x4 localMeshMatrix, Material material)
         {
             if (vertPos == null || vertPos.Length == 0)
                 throw new ArgumentException("Vertex positions array can NOT be null nor empty.");
@@ -39,14 +34,14 @@ namespace Dazed.Vitals.Rendering
             if (textureCoordinates != null)
                 _containedMeshData = (ContainedMeshData)(int)(ContainedMeshData.textureCoordinates + (int)_containedMeshData);
 
-            _arrayBufferData = GetProperArray(vertPos, normals!, textureCoordinates!);
+            var arrayBufferData = GetProperArray(vertPos, normals, textureCoordinates);
 
             _indices = indices;
 
-            _vertexCount = vertexCount;
+            VertexCount = vertexCount;
             var vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, _arrayBufferData.Length * sizeof(float), _arrayBufferData, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, arrayBufferData.Length * sizeof(float), arrayBufferData, BufferUsageHint.StaticDraw);
 
             var elementBufferObject = GL.GenBuffer();
             _vertexArrayObject = GL.GenVertexArray();
@@ -155,7 +150,7 @@ namespace Dazed.Vitals.Rendering
             return array;
         }
 
-        private float[] ArrangePosAndNormals(float[] vertPos, float[]? normals)
+        private float[] ArrangePosAndNormals(float[] vertPos, float[] normals)
         {
             int accumulated = 0;
             int offset = 0;
@@ -187,7 +182,7 @@ namespace Dazed.Vitals.Rendering
             return array;
         }
 
-        internal void Render(in RenderingData data, Matrix4 meshWorld)
+        public override void Render(in RenderingData data)
         {
             if (_partMaterial == null)
             {
@@ -195,14 +190,14 @@ namespace Dazed.Vitals.Rendering
                     Scriptorium.Warn("A mesh can not be drawn because it has no shader");
                 return;
             }
-            SetRenderingValues(in data, meshWorld);
+            SetRenderingValues(in data, WorldMatrix);
             GL.BindVertexArray(_vertexArrayObject);
             _partMaterial.UseMaterial();
             GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
             GL.BindVertexArray(0);
         }
 
-        internal void SetRenderingValues(in RenderingData data, Matrix4 meshWorld)
+        private void SetRenderingValues(in RenderingData data, Matrix4x4 meshWorld)
         {
             Artist.MissingTexture.Use();
             if (_partMaterial == null) return;
@@ -216,7 +211,7 @@ namespace Dazed.Vitals.Rendering
             _partMaterial.SetVector3("viewPos", data.CameraPosition);
         }
 
-        private void ReloadShaderData()
+        private void ReloadMaterialData()
         {
             if (_partMaterial == null)
                 return;
@@ -281,6 +276,8 @@ namespace Dazed.Vitals.Rendering
             GL.EnableVertexAttribArray(positionLocation);
             GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
         }
-        public int VertexCount => _vertexCount;
+        public int VertexCount { get; }
+
+        public override bool AllowRendering => true;
     }
 }

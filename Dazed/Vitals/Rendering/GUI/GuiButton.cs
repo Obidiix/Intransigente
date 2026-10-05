@@ -1,36 +1,41 @@
 ﻿using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dazed.Vitals.Rendering.GUI
 {
-    internal class ButtonGUI : ImageGui
+    internal class GuiButton : ImageGui
     {
-        public event Action OnButtonPress, OnButtonRelease, OnButtonHover, OnButtonLostHover;
+        public GuiText TextRender => _textRender;
+        private readonly GuiText _textRender;
+
+        public event Action? OnButtonPress, OnButtonRelease, OnButtonHover, OnButtonLostHover;
         public bool IsPressed => _isPressed;
         public bool IsHovered => _isHovered;
         private bool _isPressed, _isHovered;
 
-        private float X0;
-        private float Y0;
-        private float X1;
-        private float Y1;
+        public string Text { get => _textRender.Text; set => _textRender.Text = value; }
 
-        public ButtonGUI(Texture2D? tex, Shader? shader = null) : base(tex, shader)
+        private float _x0;
+        private float _y0;
+        private float _x1;
+        private float _y1;
+
+        public GuiButton(string? text = null, Texture2D? tex = null, Shader? shader = null) : base(tex, shader)
         {
-            ReloadData();
+            _textRender = new(text);
+            _textRender.CanBeRendered(false);
         }
 
         public override void Render(in RenderingData data)
         {
             base.Render(data);
             CheckPress();
+            _textRender.Render(data);
         }
 
         protected override void ReloadWorldMatrix()
         {
             base.ReloadWorldMatrix();
+            _textRender?.ScreenPosition = ScreenPosition;
             ReloadData();
         }
 
@@ -47,23 +52,16 @@ namespace Dazed.Vitals.Rendering.GUI
             float posX = 0.5f * ((ScreenPosition.X + 1) * Artist.Width);
             float posY = 0.5f * ((ScreenPosition.Y + 1) * Artist.Height);
 
-            X0 = (posX - width);
-            Y0 = (posY - height);
-            X1 = (posX + width);
-            Y1 = (posY + height);
+            _x0 = (posX - width);
+            _y0 = (posY - height);
+            _x1 = (posX + width);
+            _y1 = (posY + height);
         }
 
         private void CheckPress()
         {
             Vector2 mousePos = Input.MousePosition;
-            if (Input.IsKeyDown(OpenTK.Windowing.GraphicsLibraryFramework.Keys.LeftAlt))
-            {
-                //SetPositionInPixels((int)Input.MousePosition.X, (int)Input.MousePosition.Y);
-                //Scriptorium.Warn(mousePos);
-                SetPositionRelative(Input.RelativeMousePosition.X, Input.RelativeMousePosition.Y);
-                Scriptorium.Warn(Input.RelativeMousePosition);
-            }
-            if (mousePos.X > X1 || mousePos.X < X0 || mousePos.Y > Y1 || mousePos.Y < Y0)
+            if (mousePos.X > _x1 || mousePos.X < _x0 || mousePos.Y > _y1 || mousePos.Y < _y0)
             {
                 if (_isHovered)
                     OnButtonLostHover?.Invoke();
@@ -73,7 +71,6 @@ namespace Dazed.Vitals.Rendering.GUI
             if (!_isHovered)
                 OnButtonHover?.Invoke();
             _isHovered = true;
-
             if (!Input.LeftClickDown())
             {
                 if (_isPressed)
@@ -83,9 +80,8 @@ namespace Dazed.Vitals.Rendering.GUI
             }
             if (_isPressed)
                 return;
-            Scriptorium.Warn("click");
             _isPressed = true;
             OnButtonPress?.Invoke();
         }
-    }
+}
 }

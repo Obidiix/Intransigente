@@ -1,13 +1,12 @@
-﻿using Assimp;
-using Dazed.Vitals.Content;
-using OpenTK.Mathematics;
-using System.Numerics;
+﻿using Dazed.Vitals.Content;
+using Assimp;
+using Matrix4x4 = System.Numerics.Matrix4x4;
 
 namespace Dazed.Vitals.Rendering
 {
     public class Mesh : Renderable
     {
-        public MeshPart[] MeshParts { get; private set; }
+        private readonly MeshPart[] _meshParts;
 
         public override bool AllowRendering => _allowRendering;
         private bool _allowRendering = true;
@@ -15,10 +14,10 @@ namespace Dazed.Vitals.Rendering
         private readonly uint _vertexCount;
         public uint VertexCount => _vertexCount;
 
-        private Matrix4 _world;
+        private Matrix4x4 _world;
 
         private static readonly Dictionary<string, Mesh> AllMeshInstance = [];
-        public void ApplyRelativeToTransform(Matrix4 world) => _world = world;
+        public void ApplyRelativeToTransform(Matrix4x4 world) => _world = world;
 
         public void AllowForRendering(bool value) => _allowRendering = value; 
 
@@ -26,19 +25,21 @@ namespace Dazed.Vitals.Rendering
         {
             if (!pathIsAbsolute)
                 path = PathUtils.BaseDirectoryCombine(path);
-            if (AllMeshInstance.TryGetValue(path, out Mesh m))
+            if (AllMeshInstance.TryGetValue(path, out Mesh? m))
                 return m;
             MeshProperties props = properties ?? MeshProperties.Default;
             m = new Mesh(path, material, props);
             AllMeshInstance.Add(path, m);
-            Artist.AssignRendered(m);
             return m;
         }
 
         public override void Render(in RenderingData data)
         {
-            foreach (MeshPart part in MeshParts)
-                part.Render(in data, _world);
+            foreach (MeshPart part in _meshParts)
+            {
+                part.WorldMatrix = _world;
+                part.Render(data);
+            }
         }
 
         private Mesh(string path, Material material, MeshProperties properties)
@@ -70,10 +71,11 @@ namespace Dazed.Vitals.Rendering
                         allNormals.Add(mesh.Normals[n].Y);
                         allNormals.Add(mesh.Normals[n].Z);
                     }
-                MeshPart part = new(allVerts.ToArray(), properties.UseNormals ? allNormals.ToArray() : null, properties.UseTextureCoords ? allTextureCoords.ToArray() : null, mesh.GetUnsignedIndices(), mesh.VertexCount, MathTeacher.ToNumerics(meshData.RootNode.Children[i].Transform * meshData.RootNode.Transform), material);
+                MeshPart part = new(allVerts.ToArray(), properties.UseNormals ? allNormals.ToArray() : null, properties.UseTextureCoords ? allTextureCoords.ToArray() : null, mesh.GetUnsignedIndices(), mesh.VertexCount,
+                    MathTeacher.ToNumerics(meshData.RootNode.Children[i].Transform * meshData.RootNode.Transform), material);
                 allParts.Add(part);
             }
-            MeshParts = allParts.ToArray();
+            _meshParts = allParts.ToArray();
         }
     }
 }

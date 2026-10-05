@@ -15,14 +15,17 @@ namespace Dazed.Vitals
         private readonly int _charHeight;
         [JsonProperty("c")]
         private readonly char[] _charOrder;
+        [JsonProperty("u")]
+        private readonly bool _isUpperCaseOnly;
 
         [JsonConstructor]
-        public FontData(string texPath, int charWidth, int charHeight, char[] charOrder)
+        public FontData(string texPath, int charWidth, int charHeight, char[] charOrder, bool isUpperCaseOnly)
         {
             _texturePath = texPath;
             _charWidth = charWidth;
             _charHeight = charHeight;
             _charOrder = charOrder;
+            _isUpperCaseOnly = isUpperCaseOnly;
         }
 
         [JsonIgnore]
@@ -33,5 +36,7 @@ namespace Dazed.Vitals
         public int CharHeight => _charHeight;
         [JsonIgnore]
         public char[] CharOrder => _charOrder;
+        [JsonIgnore]
+        public bool IsUpperCaseOnly => _isUpperCaseOnly;
     }
 }

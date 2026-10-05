@@ -1,13 +1,33 @@
 ﻿using System.Reflection;
+using Dazed.Vitals.Paisaje.Entities;
+using Dazed.Vitals.Rendering;
+using System.Numerics;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Dazed.Vitals.Paisaje;
 
 public static class Mundo
 {
+    public static PaisajeInstance? CurrentPaisaje
+    {
+        get;
+        set
+        {
+            field = value;
+            ReloadPaisajeContext();
+        }
+    }
+
     private static readonly Dictionary<string, Type> Elements = new();
+
+    private static SectionPortal _testPortal;
 
     static Mundo()
     {
+        _testPortal = (SectionPortal) PaisajeDynamic.Create(typeof(SectionPortal), "testPortal", new(
+            [new PaisajeFieldData("min", 1), new PaisajeFieldData("max", 0)],
+            [new Vector3(3, 5, 3), new Vector3(-3, -5, -3)]));
+        
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
         List<Type> types = [];
         List<PaisajeElementAttribute> attributes = [];
@@ -36,6 +56,16 @@ public static class Mundo
         }
         return elements;
     }
+    private static void ReloadPaisajeContext()
+    {
+    }
+
+    internal static void DrawPaisaje(Frustum frustum)
+    {
+        if(_testPortal.IsDestroyed)
+            return;
+        var isInFrustum = _testPortal.IsInFrustum(frustum);
+    }
     
     public static Type GetElementType(string identifier) => Elements[identifier];
 
@@ -44,5 +74,10 @@ public static class Mundo
         PaisajeGeometryData data = PaisajeGeometryData.RetrieveGeometryData(sb.ElementData);
         vertices = data.Vertices;
         indices = data.Indices;
+    }
+
+    public static void CreateGeometry(float[] vertices, uint[] indices, out object[] elementData)
+    {
+        elementData = PaisajeGeometryData.OrganizeGeometryData(new PaisajeGeometryData(vertices, indices));
     }
 }

@@ -5,12 +5,12 @@ namespace Dazed.Vitals.Rendering.GUI
 {
     internal class ImageGui : GuiElement
     {
-        public Color4 ImageColor
+        public Color ImageColor
         {
             get => _imgColor; 
             set => _imgColor = value;
         }
-        private Color4 _imgColor = Color4.White;
+        private Color _imgColor = Color.White;
 
         public Texture2D Image
         {
@@ -76,8 +76,8 @@ namespace Dazed.Vitals.Rendering.GUI
 
         private void SetAllShaderValues()
         {
-            _imageShader.SetMatrix4NoReference("world", World);
-            _imageShader.SetVector4("color", _imgColor);
+            _imageShader.SetMatrix4("world", World);
+            _imageShader.SetColor4("color", _imgColor);
             _imageShader.SetBool("transparent", _transparent);
         }
 

@@ -9,6 +9,8 @@ public static class Cereal
         var json = JsonConvert.SerializeObject(data);
         if(!File.Exists(absolutePath))
             using (var f = File.Create(absolutePath)){}
+        if (DebugState.DebugFull)
+            Scriptorium.Warn($"File saved at path: {absolutePath} | Of type: {typeof(T)}");
         File.WriteAllText(absolutePath, json);
     }
 

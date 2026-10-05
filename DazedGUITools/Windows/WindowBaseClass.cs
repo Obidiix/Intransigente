@@ -16,8 +16,8 @@ namespace DazedGUITools.Windows
         /// </summary>
         public readonly bool ExclusiveWindow;
 
-        public bool MarkedForDisposal => _markedDisposing;
-        private bool _markedDisposing;
+        public bool MarkedForDisposal { get; private set; }
+        public bool IsDirty { get;  protected set; }
 
         public WindowBaseClass(string title, bool exclusive)
         {
@@ -48,17 +48,15 @@ namespace DazedGUITools.Windows
         /// <summary>
         /// Marks window for disposal after completing the current draw cycle.
         /// </summary>
-        protected void Close() => _markedDisposing = true;
+        protected void Close() => MarkedForDisposal = true;
 
         internal void CallDraw()
         {
-            if (_markedDisposing)
+            if (MarkedForDisposal)
                 return;
             if (ImGui.Begin(_uniqueTitle))
-            {
-                Draw();
-                ImGui.End();
-            }
+                Draw(); 
+            ImGui.End();
         }
         protected abstract void Draw();
     }

@@ -1,4 +1,5 @@
-﻿using Dazed.Vitals;
+﻿using System.Numerics;
+using Dazed.Vitals;
 using OpenTK.Windowing.Desktop;
 
 namespace Dazed
@@ -11,8 +12,9 @@ namespace Dazed
             NativeWindowSettings nSettings = new()
             {
                 Title = "Dazed",
-                ClientSize = new(1280, 720)
+                WindowState = OpenTK.Windowing.Common.WindowState.Maximized
             };
+
             ProcessArguments(args);
             #if DEBUG
             if(!DebugState.DebugMedium)

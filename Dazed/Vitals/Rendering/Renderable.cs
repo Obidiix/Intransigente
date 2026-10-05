@@ -7,6 +7,7 @@ namespace Dazed.Vitals.Rendering
     public abstract class Renderable : IDisposable
     {
         public abstract bool AllowRendering { get; }
+        protected virtual bool CustomAssignment => false;
         public virtual RenderingPass RenderPass => RenderingPass.geometryFirst;
         public abstract void Render(in RenderingData data);
 
@@ -14,12 +15,15 @@ namespace Dazed.Vitals.Rendering
 
         public virtual void Dispose()
         {
+            if (CustomAssignment) return;
             Artist.DisposeRendered(_bindPos);
+            GC.SuppressFinalize(this);
         }
 
-        public Renderable()
+        internal Renderable()
         {
-            _bindPos = Artist.AssignRendered(this);
+            if(!CustomAssignment)
+                _bindPos = Artist.AssignRendered(this);
         }
     }
 }

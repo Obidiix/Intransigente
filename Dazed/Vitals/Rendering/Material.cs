@@ -1,7 +1,4 @@
 ﻿using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -10,22 +7,14 @@ namespace Dazed.Vitals.Rendering
         private readonly Material? _parent;
         private bool IsVariant => _parent != null;
 
-        private readonly int _uniqueIndex;
-        private static int _currentAssignedIndex = 0;
-
         private readonly Shader _materialShader;
         private readonly Dictionary<string, int> _keyToIndex = [];
         private readonly List<MaterialParameter> _params = [];
-        //private readonly List<string> _keys = [];
-        //private readonly List<object> _values = [];
 
         internal event Action<int>? OnParameterChange;
 
         private static readonly Dictionary<Shader, int> Indexes = [];
         private static readonly List<Material> InstancedMaterials = [];
-
-        private static int _usedMaterial;
-        internal static int UsedMaterialIndex => _usedMaterial;
 
         public static Material GetMaterialInstance(Shader matShader, bool forceNewInstance = false)
         {
@@ -59,7 +48,6 @@ namespace Dazed.Vitals.Rendering
 
         internal void UseMaterial()
         {
-            _usedMaterial = _uniqueIndex;
             UpdateShaderParameters();
         }
 
@@ -101,6 +89,7 @@ namespace Dazed.Vitals.Rendering
                 Scriptorium.LogException(ex);
             }
         }
+        public void SetVector3(string name, System.Numerics.Vector3 value) => SetVector3(name, (Vector3)value);
         public void SetVector4(string name, Vector4 value)
         {
             try
@@ -113,6 +102,7 @@ namespace Dazed.Vitals.Rendering
                 Scriptorium.LogException(ex);
             }
         }
+        public void SetVector4(string name, System.Numerics.Vector4 value) => SetVector4(name, (Vector4)value);
         public void SetVector4(string name, Color4 value)
         {
             try
@@ -137,6 +127,7 @@ namespace Dazed.Vitals.Rendering
                 Scriptorium.LogException(ex);
             }
         }
+        public void SetMatrix4(string name, System.Numerics.Matrix4x4 value) => SetMatrix4(name, (Matrix4)value);
         public void SetBool(string name, bool value)
         {
             try
@@ -149,12 +140,13 @@ namespace Dazed.Vitals.Rendering
                 Scriptorium.LogException(ex);
             }
         }
-
-        private void UpdateShaderParameters()
+        
+        private void UpdateShaderParameters() => UpdateShaderParameters(true);
+        private void UpdateShaderParameters(bool forceReload = false)
         {
             for(int i = 0; i < _params.Count; i++)
             {
-                if (!_params[i].Changed)
+                if (!forceReload && !_params[i].Changed)
                     continue;
                 _materialShader.SetInterpretedValue(_params[i].Name, _params[i].Value);
                 _params[i].UnflagChange();
@@ -166,16 +158,14 @@ namespace Dazed.Vitals.Rendering
 
         private Material(Shader shader)
         {
-            _uniqueIndex = _currentAssignedIndex++;
             _materialShader = shader;
+            Shader.AfterShaderReload += UpdateShaderParameters;
             GetUniformsFromShader();
         }
 
         private void GetUniformsFromShader()
         {
             string[] keys = _materialShader.GetUniformsKeys();
-            //_keys.Capacity = keys.Length;
-            //_values.Capacity = keys.Length;
             _params.Capacity = keys.Length;
             for(int i = 0; i < keys.Length; i++)
             {
@@ -189,8 +179,7 @@ namespace Dazed.Vitals.Rendering
         //For variants
         private Material(Material mat)
         {
-            _uniqueIndex = _currentAssignedIndex++;
-            _parent = mat;
+            _parent = mat ?? throw new ArgumentNullException(nameof(mat));
             _materialShader = mat._materialShader;
             for (int i = 0; i < mat._params.Count; i++)
             {

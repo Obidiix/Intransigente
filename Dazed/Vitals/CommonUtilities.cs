@@ -1,24 +1,10 @@
-﻿using OpenTK.Mathematics;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Numerics;
 
 namespace Dazed.Vitals
 {
     public static class CommonUtilities
     {
         public static string FirstCharToUpper(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return "";
-            return input.First().ToString().ToUpper() + input.Substring(1);
-        }
-        public static string SetFirstCharToUpper(this string input)
         {
             if (string.IsNullOrEmpty(input))
                 return "";
@@ -35,62 +21,23 @@ namespace Dazed.Vitals
                     str += "----";
             return str + input;
         }
-        public static bool IsOfTypeAndExists<T>(this object refObject)
-        {
-            if (refObject == null)
-                return false;
-            if (refObject.GetType() != typeof(T))
-                return false;
-            return true;
-        }
-        public static bool IsOfTypeAndExists<T>(this object refObject, out object outRefObject)
-        {
-            outRefObject = refObject;
-            if (refObject == null)
-                return false;
-            if (refObject.GetType() != typeof(T))
-                return false;
-            return true;
-        }
-
-        public static bool IsOfTypeOrSubTypeAndExists<T>(this object refObject)
-        {
-            if (refObject == null)
-                return false;
-            if (refObject.GetType() != typeof(T))
-                if (refObject.GetType().IsSubclassOf(typeof(T)))
-                    return true;
-                else
-                    return false;
-            return true;
-        }
-
-        public static float Normalize(this float value)
-        {
-            float result = value;
-            if (value > 1)
-                result = 1;
-            if (value < -1)
-                result = -1;
-            return result;
-        }
 
         public static Vector3 GetDirection(this Transform transform, ObjectDirection direction)
         {
             switch (direction)
             {
                 case ObjectDirection.Right:
-                    return (Vector3)transform.Right;
+                    return transform.Right;
                 case ObjectDirection.Left:
-                    return (Vector3)(-transform.Right);
+                    return -transform.Right;
                 case ObjectDirection.Up:
-                    return (Vector3)transform.Up;
+                    return transform.Up;
                 case ObjectDirection.Down:
-                    return (Vector3)(-transform.Up);
+                    return (-transform.Up);
                 case ObjectDirection.Forward:
-                    return (Vector3)transform.Forward;
+                    return transform.Forward;
                 case ObjectDirection.Backward:
-                    return (Vector3)(-transform.Forward);
+                    return (-transform.Forward);
             }
             return default;
         }
@@ -99,17 +46,17 @@ namespace Dazed.Vitals
             switch (direction)
             {
                 case ObjectDirection.Right:
-                    return (Vector3)(-transform.Right);
+                    return -transform.Right;
                 case ObjectDirection.Left:
-                    return (Vector3)transform.Right;
+                    return transform.Right;
                 case ObjectDirection.Up:
-                    return (Vector3)(-transform.Up);
+                    return -transform.Up;
                 case ObjectDirection.Down:
-                    return (Vector3)transform.Up;
+                    return transform.Up;
                 case ObjectDirection.Forward:
-                    return (Vector3)(-transform.Forward);
+                    return -transform.Forward;
                 case ObjectDirection.Backward:
-                    return (Vector3)transform.Forward;
+                    return transform.Forward;
             }
             return default;
         }
@@ -238,7 +185,5 @@ namespace Dazed.Vitals
             result.Z = tempNumString.ToFloat();
             return result;
         }
-        public static OpenTK.Mathematics.Vector4 ToVector4(this Color color) => new(color.R, color.G, color.B, color.A);
-        public static OpenTK.Mathematics.Vector4 ToVector4(this Color4 color) => new(color.R, color.G, color.B, color.A);
     }
 }

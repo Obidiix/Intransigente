@@ -5,8 +5,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Company>Mectus Dynamics (Obidiix)</Company>
+    <Company>Sol Intransigente Naciente</Company>
     <Authors>Mectus Dynamics (Obidiix)</Authors>
+    <Product>Intransigente</Product>
   </PropertyGroup>
 
   <ItemGroup>

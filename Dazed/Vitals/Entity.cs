@@ -1,13 +1,10 @@
 ﻿using Dazed.Vitals.Paisaje;
 
 namespace Dazed.Vitals;
-public abstract class Entity : PaisajeElement
+public abstract class Entity : PaisajeDynamic
 {
-    public Transform? Transform { get; private set; }
-
     protected override void OnCreation()
     {
-        Transform = new Transform();
         Phone.SubscribeToUpdate(Update);
         Phone.SubscribeToDrawCall(Draw);
     }
