@@ -4,4 +4,5 @@
   </Folder>
   <Project Path="Dazed/Dazed.csproj" />
   <Project Path="DazedGUITools/DazedGUITools.csproj" />
+  <Project Path="Intransigente/Intransigente.csproj" Id="f5831b2e-2637-4a40-aa81-1eb523dcb7c6" />
 </Solution>

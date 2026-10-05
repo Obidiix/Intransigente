@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Dazed\Dazed.csproj" />
+    <ProjectReference Include="..\Intransigente\Intransigente.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,4 @@
 ﻿using Dazed.Vitals;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Dazed.Vitals.Paisaje.Entities;
 
 namespace Dazed.Game
