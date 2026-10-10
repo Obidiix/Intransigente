@@ -48,7 +48,7 @@ namespace Dazed.Vitals.Rendering
 
         internal void UseMaterial()
         {
-            UpdateShaderParameters();
+            UpdateShaderParameters(true);
         }
 
         public void SetFloat(string name, float value)
@@ -140,8 +140,15 @@ namespace Dazed.Vitals.Rendering
                 Scriptorium.LogException(ex);
             }
         }
-        
-        private void UpdateShaderParameters() => UpdateShaderParameters(true);
+
+        private void UpdateShaderParameters()
+        {
+            _params.Clear();
+            _keyToIndex.Clear();
+            GetUniformsFromShader();
+            UpdateShaderParameters(true);
+        }
+
         private void UpdateShaderParameters(bool forceReload = false)
         {
             for(int i = 0; i < _params.Count; i++)

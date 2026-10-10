@@ -26,7 +26,6 @@ namespace Dazed.Vitals.Rendering.GUI
             {
                 _transparent = value;
                 _imageShader = DefaultShader;
-                //TODO: Should change shader to one for transparent images
             }
         }
         private bool _transparent;

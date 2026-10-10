@@ -4,14 +4,27 @@ namespace Dazed.Vitals;
 
 public static class Cereal
 {
-    public static void SaveData<T>(T data, string absolutePath)
+    public static bool SaveData<T>(T data, string absolutePath)
     {
-        var json = JsonConvert.SerializeObject(data);
-        if(!File.Exists(absolutePath))
-            using (var f = File.Create(absolutePath)){}
-        if (DebugState.DebugFull)
-            Scriptorium.Warn($"File saved at path: {absolutePath} | Of type: {typeof(T)}");
-        File.WriteAllText(absolutePath, json);
+        try
+        {
+            var json = JsonConvert.SerializeObject(data);
+            if(!File.Exists(absolutePath))
+                using (var f = File.Create(absolutePath)){}
+            if (DebugState.DebugFull)
+                Scriptorium.Warn($"File saved at path: {absolutePath} | Of type: {typeof(T)}");
+            File.WriteAllText(absolutePath, json);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Scriptorium.LogException(ex);
+#if !DEBUG
+            throw ex;
+#else
+            return false;
+#endif
+        }
     }
 
     public static T LoadData<T>(string absolutePath)

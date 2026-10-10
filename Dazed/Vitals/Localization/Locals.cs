@@ -112,4 +112,6 @@ public static class Locals
 			return $"NOTFOUND_{tableIndex}";
 		}
 	}
+
+    internal static int AssignTableIndex(string identifier) => StringsTable[identifier];
 }

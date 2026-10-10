@@ -1,6 +1,8 @@
-﻿namespace Dazed.Vitals.Localization;
+﻿using Dazed.Vitals.AssetReference;
 
-public readonly struct LocalizedString
+namespace Dazed.Vitals.Localization;
+
+public readonly struct LocalizedString : IExposedElement
 {
 	public readonly string Identifier;
 	public readonly int TableIndex;
@@ -13,6 +15,17 @@ public readonly struct LocalizedString
 	{
 		TableIndex = tableIndex;	
 		Identifier = identifier;
+	}
+
+	/// <summary>
+	/// Creates a localized string and finds the proper identifier for it.<br></br>
+	/// Recommended only for specific use cases.
+	/// </summary>
+	/// <param name="identifier"></param>
+	public LocalizedString(string identifier)
+	{
+		Identifier = identifier;
+        TableIndex = Locals.AssignTableIndex(Identifier);
 	}
 	
 	public static implicit operator string(LocalizedString localizedString) => localizedString.Text;

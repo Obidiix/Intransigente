@@ -16,7 +16,7 @@ namespace DazedGUITools.Windows.FontCreation
         //TODO: Add more characters
         private const string DefaultCharacterOrder = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789";
 
-        string _fontName = string.Empty;
+        string _fontName = "fontName";
         string _currentSetTexturePath = string.Empty;
         string _currentSetCharactersDirectory = string.Empty;
         char[] _characterOrder;
@@ -62,7 +62,7 @@ namespace DazedGUITools.Windows.FontCreation
             }
             else
             {
-                ImGui.TextColored(Vector4Colors.Green, "Create automatically with individual characters' textures, compiled then into an atlas.");
+                ImGui.TextColored(Vector4Colors.Blue, "Create automatically with individual characters' textures, compiled then into an atlas.");
                 ImGui.Spacing();
 
                 PathValidMessage(_currentSetCharactersDirectory, out bool pathIsCompatible);
@@ -95,8 +95,6 @@ namespace DazedGUITools.Windows.FontCreation
                             float amountY = (expectedY / (float)_firstCharY);
                             if (amountX * amountY > _availableFiles.Length)
                             {
-                                //if (amountX % (_availableFiles.Length - amountY) != 0 && amountY % (_availableFiles.Length - amountX) != 0)
-                                //    continue;
                                 _validAtlasSize = true;
                                 break;
                             }
@@ -136,7 +134,7 @@ namespace DazedGUITools.Windows.FontCreation
                     ImGui.TextColored(Vector4Colors.Red, "Result: Failed");
 
             if (!compatibleValues)
-                ImGui.TextColored(Vector4Colors.Red, "One of the values above has an incompatible value.");
+                ImGui.TextColored(Vector4Colors.Red, "One of the fields above has an incompatible value.");
 
             if(ImGui.Button("Create") && compatibleValues)
             {

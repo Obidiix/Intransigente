@@ -3,10 +3,11 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using Dazed.Vitals.Rendering.RenderDebug;
 using OpenTK.Mathematics;
+using Dazed.Vitals.AssetReference;
 
 namespace Dazed.Vitals.Rendering
 {
-    internal static class Artist
+    public static class Artist
     {
         static int _fbo;
         static int _rbo;
@@ -15,6 +16,8 @@ namespace Dazed.Vitals.Rendering
         private static FullscreenRenderer _fullscreenRender = null!;
         private static readonly Shader ScreenShader;
 
+        [ExposedField("missing texture path")]
+        private static AssetPath _missingTexturePath;
         public static Texture2D MissingTexture { get; }
 
         public static int Width { get => _width; internal set { _width = value; RefreshRenderingInfo(); } }
@@ -25,9 +28,6 @@ namespace Dazed.Vitals.Rendering
         public static float RenderingScale { get => _renderingScale; set { _renderingScale = value < 0.1f ? 0.1f : value; RefreshRenderingInfo(); } }
         private static float _renderingScale = 1f;
 
-        private static Vector2i RenderSize => _renderSize;
-        private static Vector2i _renderSize = new(1, 1);
-
         public static float NormalizedHeight => _normalizedHeight;
         private static float _normalizedHeight;
 
@@ -36,9 +36,34 @@ namespace Dazed.Vitals.Rendering
 
         public static float AspectRatio { get => _aspectRatio; }
         private static float _aspectRatio;
+        public static int DesiredCameraWidth
+        {
+            get => _desiredCameraWidth;
+            set
+            {
+                _desiredCameraWidth = value;
+                _desiredCameraAspectRatio = _desiredCameraWidth / (float)_desiredCameraHeight;
+            }
+        }
 
-        public static float RenderAspectRatio => _renderAspectRatio;
-        private static float _renderAspectRatio;
+        private static int _desiredCameraWidth = 640;
+
+        public static int DesiredCameraHeight
+        {
+            get => _desiredCameraHeight;
+            set
+            {
+                _desiredCameraHeight = value;
+                _desiredCameraAspectRatio = _desiredCameraWidth / (float)_desiredCameraHeight;
+            }
+        }
+        private static int _desiredCameraHeight = 480;
+
+        public static float DesiredCameraAspectRatio => _desiredCameraAspectRatio;
+        private static float _desiredCameraAspectRatio = _desiredCameraWidth / (float)_desiredCameraHeight;
+
+        private static float _viewportX, _viewportY;
+        private static int _viewportWidth, _viewportHeight;
 
         public static Vector2i WinPos => _winPos;
         private static Vector2i _winPos;
@@ -58,19 +83,27 @@ namespace Dazed.Vitals.Rendering
         private static readonly List<int> Gui = new();
         private static bool _modifiedRendered = true;
 
-        private static int _currentBindedPosition;
-
-        private static readonly Texture2D ScreenEffectTexture2D;
+        private static int _currentMeshBinding;
 
         public static void ReloadScreenInfo()
         {
             SetUpFrameBuffer();
+            _viewportHeight = Height;
+            _viewportWidth = Width;
+            if(Width * _desiredCameraWidth > Height * _desiredCameraHeight)
+            {
+                _viewportWidth = (int)(Height * _desiredCameraAspectRatio);
+                _viewportX = (Width - _viewportWidth) / 2f;
+            }
+            else if(Width * _desiredCameraWidth < Height * _desiredCameraHeight)
+            {
+                _viewportHeight = (int)(Width * _desiredCameraAspectRatio);
+                _viewportY = (Height - _viewportHeight) / 2f;
+            }
             OnWidowResize?.Invoke();
         }
         private static void RefreshRenderingInfo()
         {
-            _renderSize = new((int)(_width * _renderingScale), (int)(_height * _renderingScale));
-            _renderAspectRatio = RenderSize.X / (float)RenderSize.Y;
             _aspectRatio = _height / (float)_width;
             _normalizedHeight = 1 / (float)_height;
             _normalizedWidth = 1 / (float)_width;
@@ -91,11 +124,9 @@ namespace Dazed.Vitals.Rendering
 
         static Artist()
         {
+            ExposedData.RetrieveAll(typeof(Artist), null);
             ScreenShader = Shader.GetShaderInstance("screenShader");
-            IdentifiedAsset missingTextureAsset = new("missingTexture");
-            IdentifiedAsset screenEffectAsset = new("screenShaderDataImage");
-            MissingTexture = new Texture2D(missingTextureAsset);
-            ScreenEffectTexture2D = new Texture2D(screenEffectAsset);
+            MissingTexture = new Texture2D(_missingTexturePath.AssetRelativePath);
         }
 
         internal static void Initialize()
@@ -112,7 +143,7 @@ namespace Dazed.Vitals.Rendering
             if (_frameBufferTexture == 0)
                 _frameBufferTexture = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, _frameBufferTexture);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, RenderSize.X, RenderSize.Y, 0, PixelFormat.Rgb, PixelType.UnsignedByte, 0);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.R3G3B2, DesiredCameraWidth, DesiredCameraHeight, 0, PixelFormat.Rgb, PixelType.UnsignedByte, 0);
             GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
             GL.TextureParameter(_frameBufferTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Clamp);
@@ -122,7 +153,7 @@ namespace Dazed.Vitals.Rendering
             if (_rbo == 0)
                 _rbo = GL.GenRenderbuffer();
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _rbo);
-            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, RenderSize.X, RenderSize.Y);
+            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, DesiredCameraWidth, DesiredCameraHeight);
 
             GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, _frameBufferTexture, 0);
             GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, _rbo);
@@ -145,13 +176,13 @@ namespace Dazed.Vitals.Rendering
 
         internal static int AssignRendered(Renderable rendered)
         {
-            if (_currentBindedPosition >= RenderElementsLimit)
+            if (_currentMeshBinding >= RenderElementsLimit)
                 throw new IndexOutOfRangeException("Drawn mesh limit exceeded, either increase arbitrary limit or check for duplicated meshes");
-            RenderPasses[_currentBindedPosition] = rendered.RenderPass;
-            AllRender[_currentBindedPosition++] = rendered;
+            RenderPasses[_currentMeshBinding] = rendered.RenderPass;
+            AllRender[_currentMeshBinding++] = rendered;
             
             _modifiedRendered = true;
-            return _currentBindedPosition;
+            return _currentMeshBinding;
         }
 
         internal static void DisposeRendered(int bindPosition)
@@ -188,19 +219,21 @@ namespace Dazed.Vitals.Rendering
             GL.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
 
-            GL.Viewport(0, 0, RenderSize.X, RenderSize.Y);
+            GL.Viewport(0, 0, _desiredCameraWidth, _desiredCameraHeight);
             RenderMeshed();
-            GL.Viewport(0, 0, Width, Height);
 
+            GL.Viewport((int)_viewportX, (int)_viewportY, _viewportWidth, _viewportHeight);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             RenderFramebuffer();
+            GL.Viewport(0, 0, Width, Height);
+
             GL.Clear(ClearBufferMask.DepthBufferBit);
             GuiRendering();
         }
 
         private static void RenderFramebuffer()
         {
-            _fullscreenRender.Render(_frameBufferTexture, ScreenEffectTexture2D);
+            _fullscreenRender.Render(_frameBufferTexture);
         }
 
         private static void RenderMeshed()
@@ -259,7 +292,7 @@ namespace Dazed.Vitals.Rendering
             GeometryFirst.Clear();
             GeometrySecond.Clear();
             Gui.Clear();
-            for(int i = 0; i < _currentBindedPosition; i++)
+            for(int i = 0; i < _currentMeshBinding; i++)
             {
                 if (AllRender[i] == null)
                     continue;

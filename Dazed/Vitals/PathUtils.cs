@@ -8,7 +8,14 @@ namespace Dazed.Vitals
 {
     public static class PathUtils
     {
-        public static string BaseDirectory => AppDomain.CurrentDomain.BaseDirectory;
+        public static bool IsBasePathOverwriten
+        {
+            get => _overwriteBase && !DazedInstance.IsContextRuntime;
+            set => _overwriteBase = value;
+        }
+        private static bool _overwriteBase;
+        public static string OverwritenBasePath { get; set; }
+        public static string BaseDirectory => IsBasePathOverwriten ? OverwritenBasePath : AppDomain.CurrentDomain.BaseDirectory;
         public static string ShadersDirectory => Path.Combine(BaseDirectory, CommonPaths.ShadersFolderName);
 
         public static string GetExtension(this string value)

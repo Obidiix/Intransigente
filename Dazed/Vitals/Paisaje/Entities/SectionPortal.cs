@@ -11,9 +11,6 @@ public class SectionPortal : PaisajeDynamic, ICullableObject
     [PaisajeField]
     private Vector3 min, max;
     
-    public Transform? Transform => _transform;
-    private Transform? _transform;
-
     public bool IsEnabled { get; set; } = true;
     private BoundingBox? _boundingBox;
     
@@ -21,13 +18,11 @@ public class SectionPortal : PaisajeDynamic, ICullableObject
 
     protected override void OnCreation()
     {
-        _transform = new Transform();
-        _boundingBox = new BoundingBox(_transform, min, max);
+        _boundingBox = new BoundingBox(Transform, min, max);
     }
 
     protected override void OnDestruction()
     {
         _boundingBox = null;
-        _transform = null;
     }
 }

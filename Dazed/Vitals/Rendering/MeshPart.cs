@@ -21,6 +21,7 @@ namespace Dazed.Vitals.Rendering
         internal Matrix4x4 WorldMatrix { get; set; }
 
         private readonly int _vertexArrayObject;
+        private const int ByteSizeOfHalf = 2;
 
         internal MeshPart(float[] vertPos, float[]? normals, float[]? textureCoordinates, uint[] indices, int vertexCount, Matrix4x4 localMeshMatrix, Material material)
         {
@@ -34,14 +35,14 @@ namespace Dazed.Vitals.Rendering
             if (textureCoordinates != null)
                 _containedMeshData = (ContainedMeshData)(int)(ContainedMeshData.textureCoordinates + (int)_containedMeshData);
 
-            var arrayBufferData = GetProperArray(vertPos, normals, textureCoordinates);
+            Half[] arrayBufferData = GetProperArray(ref vertPos, ref normals, ref textureCoordinates);
 
             _indices = indices;
 
             VertexCount = vertexCount;
             var vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, arrayBufferData.Length * sizeof(float), arrayBufferData, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, arrayBufferData.Length * ByteSizeOfHalf, arrayBufferData, BufferUsageHint.StaticDraw);
 
             var elementBufferObject = GL.GenBuffer();
             _vertexArrayObject = GL.GenVertexArray();
@@ -54,30 +55,33 @@ namespace Dazed.Vitals.Rendering
             GL.BindVertexArray(0);
         }
 
-        private float[] GetProperArray(float[] vertPos, float[] normals, float[] textureCoordinates)
+        private Half[] GetProperArray(ref float[] vertPos, ref float[] normals, ref float[] textureCoordinates)
         {
             switch (_containedMeshData)
             {
                 case ContainedMeshData.position:
-                    return vertPos;
+                    Half[] val = new Half[vertPos.Length];
+                    for (int i = 0; i < val.Length; i++)
+                        val[i] = (Half)vertPos[i];
+                    return val;
                 case ContainedMeshData.positionAndNormals:
-                    return ArrangePosAndNormals(vertPos, normals);
+                    return ArrangePosAndNormals(ref vertPos, ref normals);
                 case ContainedMeshData.positionAndTextureCoordinates:
-                    return ArrangePosAndTextureCoordinates(vertPos, textureCoordinates);
+                    return ArrangePosAndTextureCoordinates(ref vertPos, ref textureCoordinates);
                 default:
-                    return ArrangeAll(vertPos, normals, textureCoordinates);
+                    return ArrangeAll(ref vertPos, ref normals, ref textureCoordinates);
             }
         }
 
-        private float[] ArrangeAll(float[] vertPos, float[] normals, float[] textureCoordinates)
+        private Half[] ArrangeAll(ref float[] vertPos, ref float[] normals, ref float[] textureCoordinates)
         {
             int accumulated = 0;
             int offset = 0;
 
-            var array = new float[vertPos.Length + normals.Length + textureCoordinates.Length];
+            var array = new Half[vertPos.Length + normals.Length + textureCoordinates.Length];
             for (int v = 0; v < vertPos.Length; v++)
             {
-                array[v + offset] = vertPos[v];
+                array[v + offset] = (Half)vertPos[v];
                 accumulated += 1;
                 if (accumulated == 3)
                 {
@@ -91,7 +95,7 @@ namespace Dazed.Vitals.Rendering
             accumulated = 0;
             for (int n = 0; n < normals.Length; n++)
             {
-                array[n + offset] = normals[n];
+                array[n + offset] = (Half)normals[n];
                 accumulated += 1;
                 if (accumulated == 3)
                 {
@@ -105,7 +109,7 @@ namespace Dazed.Vitals.Rendering
             accumulated = 0;
             for(int t = 0; t < textureCoordinates.Length; t++)
             {
-                array[t + offset] = textureCoordinates[t];
+                array[t + offset] = (Half)textureCoordinates[t];
                 accumulated++;
                 if(accumulated == 2)
                 {
@@ -118,15 +122,15 @@ namespace Dazed.Vitals.Rendering
             return array;
         }
 
-        private float[] ArrangePosAndTextureCoordinates(float[] vertPos, float[] textureCoordinates)
+        private Half[] ArrangePosAndTextureCoordinates(ref float[] vertPos, ref float[] textureCoordinates)
         {
             int accumulated = 0;
             int offset = 0;
 
-            float[] array = new float[vertPos.Length + textureCoordinates.Length];
+            var array = new Half[vertPos.Length + textureCoordinates.Length];
             for (int v = 0; v < vertPos.Length; v++)
             {
-                array[v + offset] = vertPos[v];
+                array[v + offset] = (Half)vertPos[v];
                 accumulated += 1;
                 if (accumulated == 3)
                 {
@@ -138,7 +142,7 @@ namespace Dazed.Vitals.Rendering
             offset = 2;
             for (int n = 0; n < textureCoordinates.Length; n++)
             {
-                array[n + offset] = textureCoordinates[n];
+                array[n + offset] = (Half)textureCoordinates[n];
                 accumulated += 1;
                 if (accumulated == 2)
                 {
@@ -150,15 +154,15 @@ namespace Dazed.Vitals.Rendering
             return array;
         }
 
-        private float[] ArrangePosAndNormals(float[] vertPos, float[] normals)
+        private Half[] ArrangePosAndNormals(ref float[] vertPos, ref float[] normals)
         {
             int accumulated = 0;
             int offset = 0;
 
-            float[] array = new float[vertPos.Length + normals.Length];
+            var array = new Half[vertPos.Length + normals.Length];
             for (int v = 0; v < vertPos.Length; v++)
             {
-                array[v + offset] = vertPos[v];
+                array[v + offset] = (Half)vertPos[v];
                 accumulated += 1;
                 if (accumulated == 3)
                 {
@@ -170,7 +174,7 @@ namespace Dazed.Vitals.Rendering
             offset = 3;
             for (int n = 0; n < normals.Length; n++)
             {
-                array[n + offset] = normals[n];
+                array[n + offset] = (Half)normals[n];
                 accumulated += 1;
                 if (accumulated == 3)
                 {
@@ -206,9 +210,9 @@ namespace Dazed.Vitals.Rendering
             _partMaterial.SetMatrix4("model", _meshMatrix * meshWorld);
 
             _partMaterial.SetVector3("objectColor", new Vector3(1f, 1f, 1f));
+            _partMaterial.SetVector3("ambientColor", new Vector3(0.2f, 0.2f, 0));
             _partMaterial.SetVector3("lightColor", new Vector3(1f, 1f, 1f));
-            _partMaterial.SetVector3("lightPos", new Vector3(1.5f, 0, 3));
-            _partMaterial.SetVector3("viewPos", data.CameraPosition);
+            _partMaterial.SetVector3("lightPos", new Vector3(0, 0, -3));
         }
 
         private void ReloadMaterialData()
@@ -237,44 +241,44 @@ namespace Dazed.Vitals.Rendering
         {
             int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
-            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.HalfFloat, false, 8 * ByteSizeOfHalf, 0);
 
             int normalLocation = _partMaterial.GetAttribLocation("aNormal");
             GL.EnableVertexAttribArray(normalLocation);
-            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.HalfFloat, false, 8 * ByteSizeOfHalf, 3 * ByteSizeOfHalf);
 
             int textCoord = _partMaterial.GetAttribLocation("aTexCoords");
             GL.EnableVertexAttribArray(textCoord);
-            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
+            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.HalfFloat, false, 8 * ByteSizeOfHalf, 6 * ByteSizeOfHalf);
         }
 
         private void PositionAndTextureCoordinatesAttributePointer()
         {
             int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
-            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.HalfFloat, false, 5 * ByteSizeOfHalf, 0);
 
             int textCoord = _partMaterial.GetAttribLocation("aTexCoords");
             GL.EnableVertexAttribArray(textCoord);
-            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(textCoord, 2, VertexAttribPointerType.HalfFloat, false, 5 * ByteSizeOfHalf, 3 * ByteSizeOfHalf);
         }
 
         private void PositionAndNormalAttributePointer()
         {
             int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
-            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.HalfFloat, false, 6 * ByteSizeOfHalf, 0);
 
             int normalLocation = _partMaterial.GetAttribLocation("aNormal");
             GL.EnableVertexAttribArray(normalLocation);
-            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(normalLocation, 3, VertexAttribPointerType.HalfFloat, false, 6 * ByteSizeOfHalf, 3 * ByteSizeOfHalf);
         }
 
         private void PositionAttributePointer()
         {
             int positionLocation = _partMaterial.GetAttribLocation("aPos");
             GL.EnableVertexAttribArray(positionLocation);
-            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            GL.VertexAttribPointer(positionLocation, 3, VertexAttribPointerType.HalfFloat, false, 3 * ByteSizeOfHalf, 0);
         }
         public int VertexCount { get; }
 

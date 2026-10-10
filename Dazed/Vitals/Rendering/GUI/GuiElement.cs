@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Dazed.Vitals.AssetReference;
+using System.Numerics;
 
 namespace Dazed.Vitals.Rendering.GUI
 {

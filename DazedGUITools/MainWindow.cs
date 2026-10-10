@@ -1,4 +1,5 @@
-﻿using Dazed.Vitals.Content;
+﻿using Dazed.Vitals;
+using Dazed.Vitals.Content;
 using DazedGUITools.Windows;
 using ImGuiNET;
 using Newtonsoft.Json;
@@ -28,6 +29,7 @@ namespace DazedGUITools
         private static readonly string[] MainMenuWindowsName;
 
         internal static string ProjectFolder => _projectFolder;
+        internal static string ProjectResourcesFolder => Path.Combine(_projectFolder, CommonPaths.ResourcesFolderName);
         private static string _projectFolder = "null";
         private static StartUpWindow? _startUpWindow;
 
@@ -53,6 +55,15 @@ namespace DazedGUITools
             }
         }
 
+        private static void SetUpImguiStyle()
+        {
+            ImGui.StyleColorsLight();
+            var stPtr = ImGui.GetStyle();
+            stPtr.WindowRounding = 0;
+            stPtr.FrameRounding = 2.3f;
+            stPtr.ScrollbarRounding = 0f;
+        }
+
         static List<Type> GetMainMenuWindows(Assembly assembly, out List<MainMenuWindowAttribute> atts)
         {
             atts = new();
@@ -69,7 +80,7 @@ namespace DazedGUITools
             return windows;
         }
 
-        public MainWindow() : base(GameWindowSettings.Default, new NativeWindowSettings() { ClientSize = new Vector2i(1600, 900), APIVersion = new Version(3, 3) })
+        public MainWindow() : base(GameWindowSettings.Default, new NativeWindowSettings() { WindowState = WindowState.Maximized, APIVersion = new Version(3, 3) })
         {
         }
 
@@ -102,6 +113,7 @@ namespace DazedGUITools
             ImguiImplOpenTK4.Init(this);
             ImguiImplOpenGL3.Init();
 
+            SetUpImguiStyle();
             _startUpWindow = new();
         }
 

@@ -44,7 +44,7 @@ namespace Dazed.Vitals.Rendering.GUI
         }
         private float _verticalSpacing = 0.25f;
 
-        public int CharactersPerLine
+        public ushort CharactersPerLine
         {
             get => _charPerLine;
             set
@@ -55,7 +55,7 @@ namespace Dazed.Vitals.Rendering.GUI
                 ReloadText(false);
             }
         }
-        private int _charPerLine = 100;
+        private ushort _charPerLine = 100;
 
         public float CharacterSize
         {
@@ -86,7 +86,6 @@ namespace Dazed.Vitals.Rendering.GUI
 
         private string _text;
 
-        //private Vector2[] _charPositions;
         private Matrix4x4[] _charMatrix;
         private char[] _charValues;
 
@@ -163,7 +162,6 @@ namespace Dazed.Vitals.Rendering.GUI
                 float y = (0 - offsetY * (_verticalSpacing * _size * 10));
                 accumulated++;
 
-                //_charPositions[i] = new(x * Artist.NormalizedWidth, y * Artist.NormalizedHeight);
                 _charMatrix[i] = Matrix4x4.CreateTranslation(x * Artist.NormalizedWidth + ScreenPosition.X, y * Artist.NormalizedHeight - ScreenPosition.Y, 0);
             }
         }
@@ -197,12 +195,13 @@ namespace Dazed.Vitals.Rendering.GUI
                 _textFont = Font.DefaultFont;
                 return;
             }
+            ReloadTextPositionAndContent(_charValues == null);
+
             float scaleX = (_size * 10) * _textFont.TextureCharScale.X;
             float scaleY = (_size * 10) * _textFont.TextureCharScale.Y;
             _charScale = Matrix4x4.CreateScale(scaleX * Artist.NormalizedWidth, -scaleY * Artist.NormalizedHeight, 1);
 
             _lastSize = _size;
-            ReloadTextPositionAndContent(false);
         }
 
         public override void Render(in RenderingData data)

@@ -1,5 +1,6 @@
 ﻿namespace Dazed.Vitals.Content;
 
+[Obsolete]
 public readonly struct IdentifiedAsset
 {
     public readonly string AbsolutePath;

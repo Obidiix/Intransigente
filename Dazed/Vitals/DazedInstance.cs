@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Numerics;
+using Dazed.Vitals.AssetReference;
 using Dazed.Vitals.Content;
 using Dazed.Vitals.Localization;
 using Dazed.Vitals.Paisaje;
@@ -13,19 +15,20 @@ namespace Dazed.Vitals
 {
     public class DazedInstance : GameWindow
     {
-        static System.Numerics.Vector3 movement = new();
+        static Vector3 movement = new();
         static Quaternion debugViewRotation = new();
+
+        public static Stopwatch LastUpdateCall { get; private set; } = new();
 
         private static ViewportCamera DebugViewportCamera;
         private static IdentifiedAsset fontAsset;
         static float rotY;
         static Shader _testShader;
         static Material _testMaterial;
+        [ExposedField("playerMesh")]
+        private AssetPath _playerMeshPath;
         static Mesh _testMesh;
         static Transform _testMeshTransform;
-        static LocalizedString _testString;
-        //static GuiText _testRenderText;
-        static GuiButton _testButton;
         /// <summary>
         /// True when the game is ran to be played
         /// </summary>
@@ -34,16 +37,19 @@ namespace Dazed.Vitals
         public static bool Quited { get; private set; }
 
         private readonly static KeyCombination _reloadShadersCombo = new(Keys.LeftControl, Keys.F8);
-        private bool _triggeredReload;
 
         public DazedInstance(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
         {
+            MaximumSize = new(CurrentMonitor.HorizontalResolution, CurrentMonitor.VerticalResolution);
+            ClientSize = MaximumSize.Value;
+            AlwaysOnTop = false;
             IsContextRuntime = true;
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
+            ExposedData.RetrieveAll(GetType(), this);
             Chest.Initialize();
             Artist.Initialize();
             Artist.SetResolution(ClientSize.X, ClientSize.Y);
@@ -52,20 +58,12 @@ namespace Dazed.Vitals
             fontAsset = new("defaultFont");
             Font.DefaultFont = Font.GetFontInstance(fontAsset);
 
-            _testString = Locals.GetLocalizedString("test");
-            //_testRenderText = new();
-            //_testRenderText.Color = Color.Black;
-            //_testRenderText.Text = _testString;
-            //_testRenderText.SetPositionScreenRelative(0.5f, 0.5f);
-            _testButton = new(_testString);
-            _testButton.ImageColor = Color.Red;
             _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
             _testMaterial = Material.GetMaterialInstance(_testShader);
-            _testMesh = Mesh.GetMeshInstance(Chest.GetRelativePath("playerModel"), _testMaterial);
+            _testMesh = Mesh.GetMeshInstance(_playerMeshPath.AssetRelativePath, _testMaterial);
             DebugViewportCamera = new(90);
-            Scriptorium.Message(_testString);
 
-            UpdateFrequency = 60;
+            UpdateFrequency = CurrentMonitor.CurrentVideoMode.RefreshRate;
             VSync = VSyncMode.Adaptive;
         }
 
@@ -73,6 +71,7 @@ namespace Dazed.Vitals
         {
             Phone.Quit();
             Quited = true;
+            LastUpdateCall.Stop();
             base.OnClosing(e);
         }
 
@@ -91,6 +90,7 @@ namespace Dazed.Vitals
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+            LastUpdateCall.Start();
             base.OnUpdateFrame(args);
             Chronos.UpdateDeltaTime(Convert.ToSingle(args.Time));
             Input.UpdateInputState(KeyboardState, MouseState);
@@ -115,33 +115,35 @@ namespace Dazed.Vitals
                 rotY += MathTeacher.DegreesToRadians * Chronos.DeltaTime * 50;
             debugViewRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, rotY);
             DebugViewportCamera.Transform.Rotation = debugViewRotation;
-
-            if (Input.KeyJustPressed(Keys.Y))
-            {
-                Locals.SetLanguage(Locals.CurrentLanguage == Locals.AvailableLanguages[0] ? Locals.AvailableLanguages[1] : Locals.AvailableLanguages[0]);
-                _testButton.Text = _testString;
-            }
 #if DEBUG
             if(Input.IsKeyDown(Keys.F10))
                 Console.Clear();
 
-            if (Input.IsKeyDown(Keys.G))
-                _testButton.AddPosition(0, Chronos.DeltaTime);
-            if (Input.IsKeyDown(Keys.H))
-                _testButton.AddPosition(0, -Chronos.DeltaTime);
+            if (Input.IsKeyDown(Keys.I))
+                _testMeshTransform.MoveGlobal(Vector3.UnitZ * Chronos.DeltaTime);
+            if (Input.IsKeyDown(Keys.J))
+                _testMeshTransform.MoveGlobal(-Vector3.UnitX * Chronos.DeltaTime);
             if (Input.IsKeyDown(Keys.K))
-                _testButton.AddPosition(Chronos.DeltaTime, 0);
+                _testMeshTransform.MoveGlobal(-Vector3.UnitZ * Chronos.DeltaTime);
             if (Input.IsKeyDown(Keys.L))
-                _testButton.AddPosition(-Chronos.DeltaTime, 0);
+                _testMeshTransform.MoveGlobal(Vector3.UnitX * Chronos.DeltaTime);
 #endif
-            if (_reloadShadersCombo.KeysDown() && !_triggeredReload)
-            {
-                _triggeredReload = true;
+            if (_reloadShadersCombo.FirstHoldSecondPressed())
                 Artist.TriggerAllShadersReload();
+            if (Input.KeyJustPressed(Keys.F11))
+            {
+                switch (WindowState)
+                {
+                    case WindowState.Fullscreen:
+                        WindowState = WindowState.Maximized;
+                        break;
+                    default:
+                        WindowState = WindowState.Fullscreen;
+                        break;
+                }
             }
-            if (_reloadShadersCombo.KeysReleased())
-                _triggeredReload = false;
-            
+
+            LastUpdateCall.Restart();
             Phone.Update();
         }
         protected override void OnRenderFrame(FrameEventArgs args)

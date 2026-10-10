@@ -56,6 +56,12 @@ namespace Dazed.Vitals
             return false;
         }
 
+        internal bool FirstHoldSecondPressed()
+        {
+            if(_k.Length != 2) return false;
+            return Input.IsKeyDown(_k[0]) && Input.KeyJustPressed(_k[1]);
+        }
+
         public KeyCombination(Keys[] keys, KeyCombinationType keyCombination = KeyCombinationType.And)
         {
             if (keys.Length == 1)

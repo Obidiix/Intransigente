@@ -39,19 +39,16 @@ namespace DazedGUITools.Windows.BinExploration
 
         private static string DirectoryDown(string currentSubFolder)
         {
-            if (!currentSubFolder.Contains('/'))
+            if (!currentSubFolder.Contains('\\'))
                 return string.Empty;
-            string result = "";
-            int count = 0;
-            for(int i = currentSubFolder.Length - 1; i >= 0; i++)
+            string relativeTo = "";
+            for(int i = 0; i < currentSubFolder.Length - 1; i++)
             {
-                if (currentSubFolder[i] == '/')
+                if (currentSubFolder[i] == '\\')
                     break;
-                count++;
+                relativeTo += currentSubFolder[i];
             }
-            for(int i = 0; i < currentSubFolder.Length - count; i++)
-                result += currentSubFolder[i];
-            return result;
+            return relativeTo;
         }
 
         private void SelectElement(DisplayedBinElement displayedBinElement)

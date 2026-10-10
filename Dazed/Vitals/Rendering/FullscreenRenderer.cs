@@ -1,8 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -49,14 +46,12 @@ namespace Dazed.Vitals.Rendering
             GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
         }
 
-        public void Render(int textureId, Texture2D dataTexture)
+        public void Render(int textureId)
         {
             GL.BindVertexArray(_vertexArrayObject);
             _screenShader.Use();
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, textureId);
-            dataTexture.Use(TextureUnit.Texture1);
-            _screenShader.SetVector2("screenDimensions", _dimensions);
 
             GL.DrawElements(PrimitiveType.Triangles, QuadData.Indices.Length, DrawElementsType.UnsignedInt, 0);
             GL.BindVertexArray(0);

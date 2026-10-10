@@ -6,7 +6,7 @@ namespace Dazed.Vitals.Paisaje;
 /// </summary>
 public abstract class PaisajeDynamic
 {
-    public Transform Transform { get; private set; }
+    public Transform Transform { get; private set; } = null!;
     public string Name { get; internal set; } = null!;
     protected abstract void OnCreation();
     protected abstract void OnDestruction();

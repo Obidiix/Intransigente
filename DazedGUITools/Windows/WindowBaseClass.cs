@@ -23,6 +23,7 @@ namespace DazedGUITools.Windows
         {
             Title = title;
             UniqueWindowID = Guid.NewGuid();
+            ExclusiveWindow = exclusive;
             _uniqueTitle = GetUniqueName(title, out bool successful);
             if (!successful)
             {

@@ -102,9 +102,9 @@ namespace Dazed.Vitals
         /// Moves on the global axis
         /// </summary>
         /// <param name="movement"></param>
-        public void MoveGlobal(Vector3 movement)
+        public void MoveGlobal(Vector3 movement, bool normalized = false)
         {
-            movement = Vector3.Normalize(movement);
+            movement = normalized ? Vector3.Normalize(movement) : movement;
             MoveInternal(movement);
         }
         /// <summary>

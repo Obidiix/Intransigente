@@ -74,7 +74,7 @@ namespace Dazed.Vitals.Rendering
 
         private void ReloadProjection()
         {
-            _projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(MathTeacher.DegreesToRadians * _fov, Artist.RenderAspectRatio, _nearClipPlane, _farClipPlane);
+            _projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(MathTeacher.DegreesToRadians * _fov, Artist.DesiredCameraAspectRatio, _nearClipPlane, _farClipPlane);
             RecalculateViewFrustum();
         }
 

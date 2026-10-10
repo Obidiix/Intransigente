@@ -3,6 +3,7 @@ using Dazed.Vitals.Exceptions;
 
 namespace Dazed.Vitals.Content
 {
+    [Obsolete]
     public static class Chest
     {
         public const string ContentTableFileName = "contentTable.ct";
@@ -65,7 +66,7 @@ namespace Dazed.Vitals.Content
         //Written this way to make faulty IDs stand out with an exception.
         public static string GetRelativePath(string id) => keyToPath[id];
 
-        public static AssimpContext AssimpContext { get; private set; } = null!;
+        internal static AssimpContext AssimpContext { get; private set; } = null!;
 
         internal static void Initialize()
         {

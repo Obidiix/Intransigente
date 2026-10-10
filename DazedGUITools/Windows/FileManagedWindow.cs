@@ -22,7 +22,7 @@ namespace DazedGUITools.Windows
         protected bool InputFile(string label, ref string result)
         {
             bool modified = false;
-            if (ImGui.Button("Search"))
+            if (ImGui.Button("Search##"+label))
             {
                 result = FileSearching.OpenFileSearch();
                 modified = true;
@@ -35,7 +35,7 @@ namespace DazedGUITools.Windows
         protected bool InputDirectory(string label, ref string result)
         {
             bool modified = false;
-            if (ImGui.Button("Search"))
+            if (ImGui.Button("Search##"+label))
             {
                 result = FileSearching.OpenFolderSearch();
                 modified = true;

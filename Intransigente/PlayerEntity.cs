@@ -1,7 +1,7 @@
 ﻿using Dazed.Vitals;
 using Dazed.Vitals.Paisaje.Entities;
 
-namespace Dazed.Game
+namespace Intransigente
 {
     [Entity(PlayerEntityName)]
     public class PlayerEntity : Entity

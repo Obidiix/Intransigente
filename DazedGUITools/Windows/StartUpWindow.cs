@@ -32,7 +32,14 @@ namespace DazedGUITools.Windows
         {
             if (_foundConfig)
             {
-                Close();
+                if(ImGui.Button("Previously assigned folder"))
+                {
+                    Close();
+                }
+                if(ImGui.Button("Another folder"))
+                {
+                    _foundConfig = false;
+                }
                 return;
             }
             ImGui.Text("Please select a path to use for resources and shaders");

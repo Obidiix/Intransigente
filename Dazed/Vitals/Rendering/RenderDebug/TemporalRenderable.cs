@@ -3,7 +3,7 @@
 /// <summary>
 /// Intended to be used for debug purposes, like a bounding box or a bounding sphere
 /// </summary>
-internal abstract class TemporalRenderable : Renderable
+public abstract class TemporalRenderable : Renderable
 {
 	protected static readonly Shader DebugShader;
 	protected override bool CustomAssignment => true;

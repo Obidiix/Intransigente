@@ -96,12 +96,18 @@ namespace Dazed.Vitals.Rendering
             var vertexShader = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vertexShader, vertexShaderSource);
             if (!CompileShader(vertexShader))
-                throw new Exception("Check console for more information");
+                if (_handle != 0)
+                    return;
+                else
+                    throw new Exception("Error on compilation, check command console for more info.");
 
             var fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
             GL.ShaderSource(fragmentShader, fragmentShaderSource);
             if (!CompileShader(fragmentShader))
-                throw new Exception("Check console for more information");
+                if (_handle != 0)
+                    return;
+                else
+                    throw new Exception("Error on compilation, check command console for more info.");
 
             if (_handle == 0)
                 _handle = GL.CreateProgram();
@@ -147,13 +153,21 @@ namespace Dazed.Vitals.Rendering
 
         private static bool CompileShader(int shader)
         {
-            GL.CompileShader(shader);
-
-            GL.GetShader(shader, ShaderParameter.CompileStatus, out var code);
-            if (code != (int)All.True)
+            try
             {
-                var infoLog = GL.GetShaderInfoLog(shader);
-                throw new Exception($"Error occurred whilst compiling Shader({shader}).\n\n{infoLog}");
+                GL.CompileShader(shader);
+
+                GL.GetShader(shader, ShaderParameter.CompileStatus, out var code);
+                if (code != (int)All.True)
+                {
+                    var infoLog = GL.GetShaderInfoLog(shader);
+                    throw new Exception($"Error occurred whilst compiling Shader({shader}).\n\n{infoLog}");
+                }
+            }
+            catch(Exception ex)
+            {
+                Scriptorium.LogException(ex);
+                return false;
             }
             return true;
         }
@@ -234,7 +248,6 @@ namespace Dazed.Vitals.Rendering
                 if (DebugState.DebugFull) Scriptorium.Warn($"Null value returned for shader's uniform {name}");
                 return;
             }
-            //TODO: Might need to replace this with a quick lookup dictionary that directly gives the required function for the type
             Type type = value.GetType();
             if(ValueAssignments.TryGetValue(type, out var assignment))
             {
