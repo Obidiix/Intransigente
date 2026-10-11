@@ -57,6 +57,9 @@ namespace Dazed.Vitals.Rendering.GUI
         }
         private ushort _charPerLine = 100;
 
+        /// <summary>
+        /// Default is 50
+        /// </summary>
         public float CharacterSize
         {
             get => _size;
@@ -237,11 +240,6 @@ namespace Dazed.Vitals.Rendering.GUI
                 }
             }
             GL.BindVertexArray(0);
-        }
-
-        public override void Dispose()
-        {
-            base.Dispose();
         }
     }
 }

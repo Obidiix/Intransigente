@@ -187,8 +187,6 @@ namespace DazedGUITools
             {
                 if (ImGui.BeginMenu("Context Options"))
                 {
-                    if(ImGui.MenuItem("Save Content Table", "Ctrl + B (TODO)"))
-                        SaveContentTable();
                     ImGui.EndMenu();
                 }
                 if(ImGui.BeginMenu("Tool Windows"))
@@ -204,16 +202,6 @@ namespace DazedGUITools
                 }
                 ImGui.EndMainMenuBar();
             }
-        }
-
-        private static void SaveContentTable()
-        {
-            SerializedContentTable cT = Chest.SerializeContentTable();
-            string content = JsonConvert.SerializeObject(cT);
-            string pathToFile = Path.Combine(_projectFolder, Chest.ContentTableFileName);
-            if (!File.Exists(pathToFile))
-                using (var f = File.Create(pathToFile)) { f.Dispose(); }
-            File.WriteAllText(pathToFile, content);
         }
 
         protected override void OnClosing(CancelEventArgs e)

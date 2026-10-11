@@ -1,0 +1,20 @@
+﻿using SoundFlow.Providers;
+
+namespace Dazed.Vitals.Audio
+{
+    public class AudioClip
+    {
+        public readonly string Path;
+        public StreamDataProvider Provider => _provider;
+        private readonly StreamDataProvider _provider;
+
+        internal AudioClip(string path)
+        {
+            Path = PathUtils.BaseDirectoryCombine(path);
+            if (!File.Exists(Path))
+                throw new NullReferenceException($"File at path |{Path}| does not exist");
+            var fileStream = File.OpenRead(Path);
+            _provider = new StreamDataProvider(OmniSonus.Engine, OmniSonus.Format, fileStream);
+        }
+    }
+}

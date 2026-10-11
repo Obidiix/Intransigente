@@ -2,8 +2,9 @@
 
 namespace Dazed
 {
-    public class ProgramFuncs
+    public static class ProgramFuncs
     {
+        public static bool StoreLogs { get; private set; }
         //static void Main(string[] args)
         //{
         //    GameWindowSettings gSettings = new GameWindowSettings();
@@ -37,6 +38,8 @@ namespace Dazed
                         level = DebugLevel.Full;
                     DebugState.Initialize(level);
                 }
+                else if(argument.ToLower() == "-logall")
+                    StoreLogs = true;
             }
 #if DEBUG
             if (!DebugState.DebugMedium)

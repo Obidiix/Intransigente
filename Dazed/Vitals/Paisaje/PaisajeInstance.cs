@@ -9,9 +9,9 @@ public class PaisajeInstance : Renderable
     private readonly List<PaisajeDynamic> _elements = [];
     private readonly string[] _paisajeContext;
     
-    public PaisajeInstance(IdentifiedAsset asset)
+    public PaisajeInstance(string assetAbsolutePath)
     {
-        var sp = Cereal.LoadData<SerializedPaisaje>(asset.AbsolutePath);
+        var sp = Cereal.LoadData<SerializedPaisaje>(assetAbsolutePath);
         _brushes = new PaisajeGeometry[sp.Elements.Length];
         _paisajeContext = sp.Context;
         for (var i = 0; i < sp.Elements.Length; i++)

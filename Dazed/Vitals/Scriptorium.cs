@@ -9,28 +9,31 @@ namespace Dazed.Vitals
         public static void Message(object? obj) => Message(message: obj?.ToString());
         public static void Message(string? message)
         {
-            Console.Write(DateTime.Now.ToString(CultureInfo.InvariantCulture) + " - ");
-            Console.WriteLine(string.IsNullOrEmpty(message) ? "Null." : message.EndWithPoint());
-            OnEntryRecord?.Invoke("Message: " + message);
+            string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            Console.WriteLine(result);
+            OnEntryRecord?.Invoke("Message: " + result);
         }
         public static void Warn(object? obj) => Warn(message: obj?.ToString());
         public static void Warn(string? message)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(DateTime.Now.ToString(CultureInfo.InvariantCulture) + " - ");
-            Console.WriteLine(string.IsNullOrEmpty(message) ? "Null." : message.EndWithPoint());
+            string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            Console.WriteLine(result);
             Console.ResetColor();
-            OnEntryRecord?.Invoke("Warning: " + message);
+            OnEntryRecord?.Invoke("Warning: " + result);
         }
         public static void Warn(int entry) => Warn(entry.ToString());
         public static void Error(object obj) => Error(obj.ToString()!);
         public static void Error(string? message)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write(DateTime.Now.ToString(CultureInfo.InvariantCulture) + " - ");
-            Console.WriteLine(string.IsNullOrEmpty(message) ? "Null." : message.EndWithPoint());
+            string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            Console.WriteLine(result);
             Console.ResetColor();
-            OnEntryRecord?.Invoke("Error: " + message);
+            OnEntryRecord?.Invoke("Error: " + result);
         }
 
         public static void LogException(Exception ex)

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using Dazed.Vitals.AssetReference;
+using Dazed.Vitals.Audio;
 using Dazed.Vitals.Content;
 using Dazed.Vitals.Localization;
 using Dazed.Vitals.Paisaje;
@@ -21,12 +22,16 @@ namespace Dazed.Vitals
         public static Stopwatch LastUpdateCall { get; private set; } = new();
 
         private static ViewportCamera DebugViewportCamera;
-        private static IdentifiedAsset fontAsset;
+        [ExposedField("defaultFont")]
+        private AssetPath _defaultFont;
+        [ExposedField("playerMesh")]
+        private AssetPath _playerMeshPath;
+        [ExposedField("testSound")]
+        private AssetPath _testSoundPath;
+        private SoundEmitter _testEmitter;
         static float rotY;
         static Shader _testShader;
         static Material _testMaterial;
-        [ExposedField("playerMesh")]
-        private AssetPath _playerMeshPath;
         static Mesh _testMesh;
         static Transform _testMeshTransform;
         /// <summary>
@@ -50,18 +55,18 @@ namespace Dazed.Vitals
         {
             base.OnLoad();
             ExposedData.RetrieveAll(GetType(), this);
-            Chest.Initialize();
             Artist.Initialize();
             Artist.SetResolution(ClientSize.X, ClientSize.Y);
 
             _testMeshTransform = new();
-            fontAsset = new("defaultFont");
-            Font.DefaultFont = Font.GetFontInstance(fontAsset);
+            Font.DefaultFont = Font.GetFontInstance(_defaultFont.AssetRelativePath);
 
             _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
             _testMaterial = Material.GetMaterialInstance(_testShader);
             _testMesh = Mesh.GetMeshInstance(_playerMeshPath.AssetRelativePath, _testMaterial);
             DebugViewportCamera = new(90);
+
+            _testEmitter = new(_testSoundPath, SoundEmissionSettings.DefaultLooped);
 
             UpdateFrequency = CurrentMonitor.CurrentVideoMode.RefreshRate;
             VSync = VSyncMode.Adaptive;
@@ -72,6 +77,7 @@ namespace Dazed.Vitals
             Phone.Quit();
             Quited = true;
             LastUpdateCall.Stop();
+            OmniSonus.Terminate();
             base.OnClosing(e);
         }
 

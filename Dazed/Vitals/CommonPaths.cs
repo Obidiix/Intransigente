@@ -15,6 +15,7 @@ namespace Dazed.Vitals
         public const string FontsFolderName = "fonts";
         public const string MapDataFolderName = "maps";
         public const string ExposedDataFile = "expDat.data";
+        public const string LogsFolderName = "logs";
 
         /// <summary>
         /// Includes the dot

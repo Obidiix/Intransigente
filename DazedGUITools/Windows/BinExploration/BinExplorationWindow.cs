@@ -85,6 +85,7 @@ namespace DazedGUITools.Windows.BinExploration
                 _displayedElements[d] = directoryElements[d];
             for (int f = 0; f < fileElements.Length; f++)
                 _displayedElements[directoryElements.Length + f] = fileElements[f];
+            _contextChanged = false;
         }
 
         private DisplayedBinElement[] FindAllDirectories()

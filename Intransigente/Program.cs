@@ -7,9 +7,11 @@ namespace Intransigente
     internal class Program
     {
         private const int SecondsForProgramAnswer = 10;
-        private static DazedInstance _instance;
+        private static DazedInstance? _instance;
+        private static ExceptionThrownMessage? _onException;
         private static bool _end;
 
+        private static readonly List<string> _compiledLogs = new();
         static void Main(string[] args)
         {
             GameWindowSettings gSettings = new GameWindowSettings();
@@ -24,13 +26,53 @@ namespace Intransigente
             ProgramFuncs.ProcessArguments(args);
             Scriptorium.OnEntryRecord += Log;
             _instance = new(gSettings, nSettings);
+#if !DEBUG
             Task exitTask = new(LifeCheck);
             exitTask.Start();
-            _instance.Run();
-            _end = true;
-            exitTask.Wait();
-            exitTask.Dispose();
+            try
+            {
+#endif
+                _instance.Run();
+                _end = true;
+#if !DEBUG
+                exitTask.Wait();
+                exitTask.Dispose();
+            }
+            catch(Exception ex)
+            {
+                SaveLogs();
+#endif
+                _end = true;
+#if !DEBUG
+                exitTask.Wait();
+                exitTask.Dispose();
+                _onException = new("EXCEPTION THROWN: " + ex.Message + " | WITH TRACE: " + ex.StackTrace);
+                _onException.Run();
+            }
+#endif
+            if (ProgramFuncs.StoreLogs && !_savedLogs)
+                SaveLogs();
             Scriptorium.OnEntryRecord -= Log;
+        }
+
+        private static bool _savedLogs;
+        private static void SaveLogs()
+        {
+            string content = "";
+            foreach(string s in _compiledLogs)
+            {
+                content += s;
+                content += "\n";
+            }
+            var now = DateTime.UtcNow;
+            string path = Path.Combine(CommonPaths.LogsFolderName, $"{now.Second}-{now.Minute}-{now.Hour}-{now.Day}-{now.Month}-{now.Year}.log");
+            path = PathUtils.BaseDirectoryCombine(path);
+            if (!Directory.Exists(PathUtils.BaseDirectoryCombine(CommonPaths.LogsFolderName)))
+                Directory.CreateDirectory(PathUtils.BaseDirectoryCombine(CommonPaths.LogsFolderName));
+            using var f = File.Create(path);
+            f.Dispose();
+            File.WriteAllText(path, content);
+            _savedLogs = true;
         }
 
         private static void LifeCheck()
@@ -51,7 +93,7 @@ namespace Intransigente
 
         private static void Log(string message)
         {
-
+            _compiledLogs.Add(message);
         }
     }
 }

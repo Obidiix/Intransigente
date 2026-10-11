@@ -30,14 +30,19 @@ namespace Dazed.Vitals
 
         public static Font? DefaultFont { get; internal set; }
 
-        public static Font GetFontInstance(IdentifiedAsset asset)
+        public static Font GetFontInstance(string assetAbsolutePath, bool forceNewInstance = false)
         {
-            if (!FontInstances.TryGetValue(asset.RelativePath, out var font))
+            if (forceNewInstance)
             {
-                font = new Font(asset.RelativePath);
-                FontInstances.Add(asset.RelativePath, font);
+                Font tFont = new Font(assetAbsolutePath);
+                return tFont;
             }
-            return font ?? throw new Exception("Font failed to be created with asset: " + asset.ToString());
+            if (!FontInstances.TryGetValue(assetAbsolutePath, out var font))
+            {
+                font = new Font(assetAbsolutePath);
+                FontInstances.Add(assetAbsolutePath, font);
+            }
+            return font ?? throw new Exception("Font failed to be created with asset: " + assetAbsolutePath);
         }
 
         private Font(string fontDataPath)
@@ -82,8 +87,6 @@ namespace Dazed.Vitals
                 c = chars.main.Value;
             if (!_charTexPos.TryGetValue(c, out Vector2 pos))
             {
-                if (DebugState.DebugMedium)
-                    Scriptorium.Warn("Font is missing character: " + c);
                 return Vector2.Zero;
             }
             if (normalized)
