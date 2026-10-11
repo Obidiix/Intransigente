@@ -1,4 +1,5 @@
-﻿using Dazed.Vitals.Content;
+﻿using Dazed.Vitals.AssetReference;
+using Dazed.Vitals.Content;
 using Dazed.Vitals.Rendering;
 using Dazed.Vitals.Rendering.GUI;
 using OpenTK.Graphics.OpenGL;
@@ -11,7 +12,8 @@ namespace Dazed.Vitals
     {
         private string _messageContent;
         private GuiText _message;
-        private static IdentifiedAsset fontAsset;
+        [ExposedField("defaultFont")]
+        private static AssetPath fontAsset;
         private GuiButton _closeGameButton;
         public ExceptionThrownMessage(string message) : base(new(), new() { ClientSize = new(640, 480) })
         {
@@ -25,7 +27,7 @@ namespace Dazed.Vitals
             Artist.SetResolution(ClientSize.X, ClientSize.Y);
 
             fontAsset = new("defaultFont");
-            Font.DefaultFont = Font.GetFontInstance(fontAsset.AbsolutePath, true);
+            Font.DefaultFont = Font.GetFontInstance(fontAsset, true);
 
             _message = new(_messageContent)
             {
