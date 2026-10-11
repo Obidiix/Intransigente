@@ -1,5 +1,4 @@
 ﻿using Dazed.Vitals.AssetReference;
-using Dazed.Vitals.Content;
 using Dazed.Vitals.Rendering;
 using Dazed.Vitals.Rendering.GUI;
 using OpenTK.Graphics.OpenGL;
