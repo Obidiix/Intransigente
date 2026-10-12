@@ -210,7 +210,7 @@ namespace Dazed.Vitals.Rendering
             _partMaterial.SetMatrix4("model", _meshMatrix * meshWorld);
 
             _partMaterial.SetVector3("objectColor", new Vector3(1f, 1f, 1f));
-            _partMaterial.SetVector3("ambientColor", new Vector3(0.2f, 0.2f, 0));
+            _partMaterial.SetVector3("ambientColor", new Vector3(0.3f, 0.3f, 0));
             _partMaterial.SetVector3("lightColor", new Vector3(1f, 1f, 1f));
             _partMaterial.SetVector3("lightPos", new Vector3(0, 0, -3));
         }

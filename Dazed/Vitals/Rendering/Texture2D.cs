@@ -28,7 +28,7 @@ namespace Dazed.Vitals.Rendering
         private float _height;
         private byte[] _pixelsBytes;
 
-        private ImageResult _mImage;
+        private ImageResult? _mImage;
         private readonly bool _isReadOnly, _isTransparent;
 
         internal Texture2D(string path, bool isTransparent = false, bool isReadOnly = true)
@@ -60,6 +60,7 @@ namespace Dazed.Vitals.Rendering
             GL.BindTexture(TextureTarget.Texture2D, 0);
             if (_isReadOnly)
                 _pixelsBytes = Array.Empty<byte>();
+            _mImage = null;
         }
         //public void LoadNewTexture(IdentifiedAsset asset, bool pathIsAbsolute = false)
         //{

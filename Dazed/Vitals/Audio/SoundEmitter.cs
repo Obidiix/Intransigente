@@ -9,12 +9,26 @@ namespace Dazed.Vitals.Audio
         private AudioClip _clip;
         private bool _playerExists, _isDisposed;
 
+        public float Volume
+        { get => Settings.Volume; set => _settings.Volume = value; }
+        public float Panning 
+        { get => Settings.Panning; set => _settings.Panning = value; }
+        public float PlaySpeed 
+        { get => Settings.Speed; set => _settings.Speed = value; }
+        public bool Loop 
+        { get => Settings.Loop; set => _settings.Loop = value; }
+        public bool PlayOnStart 
+        { get => Settings.PlayOnStart; set => _settings.PlayOnStart = value; }
+        public bool ThreeDimensionalAudio 
+        { get => Settings.ThreeDimensionalAudio; set => _settings.ThreeDimensionalAudio = value; }
+
+        private SoundEmissionSettings _settings;
         private SoundEmissionSettings Settings
         {
-            get => field;
+            get => _settings;
             set
             {
-                field = value;
+                _settings = value;
                 SetPlayerSettings();
             }
         }
@@ -58,6 +72,28 @@ namespace Dazed.Vitals.Audio
             _player = new(OmniSonus.Engine, OmniSonus.Format, clip.Provider);
             OmniSonus.MainDevice.MasterMixer.AddComponent(_player);
             _playerExists = true;
+        }
+
+        public void Play()
+        {
+            if (!_playerExists) return;
+            _player.Play();
+        }
+        public void Pause()
+        {
+            if (!_playerExists) return;
+            _player.Pause();
+        }
+        public void Stop()
+        {
+            if (!_playerExists) return;
+            _player.Stop();
+        }
+        public void Restart()
+        {
+            if (!_playerExists) return;
+            _player.Stop();
+            _player.Play();
         }
 
         public void Dispose()

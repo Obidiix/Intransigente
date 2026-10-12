@@ -8,7 +8,7 @@ namespace Dazed.Vitals.Audio
     {
         internal static MiniAudioEngine Engine => _engine;
         internal static AudioPlaybackDevice MainDevice => _mainDevice;
-        internal static AudioFormat Format => AudioFormat.Cd;
+        internal static AudioFormat Format => new() { Format = SoundFlow.Enums.SampleFormat.S16, Channels = 2, Layout = ChannelLayout.Stereo, SampleRate = 11025};
 
         private static MiniAudioEngine _engine;
         private static AudioPlaybackDevice _mainDevice;

@@ -8,7 +8,7 @@ namespace Intransigente
     {
         private const int SecondsForProgramAnswer = 10;
         private static DazedInstance? _instance;
-        private static ExceptionThrownMessage? _onException;
+        private static readonly ExceptionThrownMessage? _onException;
         private static bool _end;
 
         private static readonly List<string> _compiledLogs = new();
@@ -22,7 +22,9 @@ namespace Intransigente
                 AspectRatio = (640, 480),
                 WindowState = OpenTK.Windowing.Common.WindowState.Maximized
             };
-
+#if DEBUG
+            ProgramFuncs.RetrieveFolders();
+#endif
             ProgramFuncs.ProcessArguments(args);
             Scriptorium.OnEntryRecord += Log;
             _instance = new(gSettings, nSettings);

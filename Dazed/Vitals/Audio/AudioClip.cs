@@ -8,6 +8,11 @@ namespace Dazed.Vitals.Audio
         public StreamDataProvider Provider => _provider;
         private readonly StreamDataProvider _provider;
 
+        public static void CreateAudioClip(string path, out AudioClip clip)
+        {
+            clip = new AudioClip(path);
+        }
+
         internal AudioClip(string path)
         {
             Path = PathUtils.BaseDirectoryCombine(path);
