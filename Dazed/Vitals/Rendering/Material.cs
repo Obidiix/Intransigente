@@ -42,7 +42,7 @@ namespace Dazed.Vitals.Rendering
                     Scriptorium.Warn("A material base instance should not be updating from a parent, as it shouldn't have one");
                 return;
             }
-            _params[index].SetValue(_parent._params[index].Value);
+            _params[index].SetValue(_parent!._params[index].Value);
         }
 
         internal void UseMaterial()

@@ -8,7 +8,7 @@ namespace Dazed.Vitals.Rendering
     {
         public ImageResult TextureImage
         {
-            get => _mImage;
+            get => _image;
             set
             {
                 if (_isReadOnly)
@@ -18,7 +18,7 @@ namespace Dazed.Vitals.Rendering
                     Scriptorium.Warn("Image is readonly and can not be modified");
                     return;
                 }
-                _mImage = value;
+                _image = value;
                 PushData();
             }
         }
@@ -26,57 +26,88 @@ namespace Dazed.Vitals.Rendering
         private float _width;
         public float Height => _height;
         private float _height;
-        private byte[] _pixelsBytes;
 
-        private ImageResult? _mImage;
-        private readonly bool _isReadOnly, _isTransparent;
+        public ImageDataType ImageDataType => _dataType;
+        private ImageDataType _dataType;
+        private byte[] _pixelsBytes = null!;
 
-        internal Texture2D(string path, bool isTransparent = false, bool isReadOnly = true)
+        private ImageResult _image;
+        private readonly bool _isReadOnly;
+
+        private static readonly Dictionary<TextureIdentification, Texture2D> InstantiatedTextures = new();
+        public static Texture2D GetTextureInstance(TextureIdentification identification)
+        {
+            if(InstantiatedTextures.TryGetValue(identification, out var texture))
+                return texture;
+            texture = new(identification.Path, identification.ImageDataType, identification.IsReadOnly);
+            InstantiatedTextures.Add(identification, texture);
+            return texture;
+        }
+        public static Texture2D GetTextureInstance(string path) => GetTextureInstance(new TextureIdentification(path, ImageDataType.RGB));
+
+        internal Texture2D(string path, ImageDataType dataType, bool isReadOnly)
             : base(TextureTarget.Texture2D)
         {
-            _isTransparent = isTransparent;
+            _dataType = dataType;
             using (var stream = File.OpenRead(path))
             {
-                _mImage = ImageResult.FromStream(stream, _isTransparent ? ColorComponents.RedGreenBlueAlpha : ColorComponents.RedGreenBlue);
+                _image = ImageResult.FromStream(stream, GetColorComponent());
             }
+
             _isReadOnly = isReadOnly;
             PushData();
         }
+
+        private ColorComponents GetColorComponent()
+        {
+            return _dataType switch
+            {
+                ImageDataType.RGB => ColorComponents.RedGreenBlue,
+                ImageDataType.RGBA => ColorComponents.RedGreenBlueAlpha,
+                ImageDataType.Grey => ColorComponents.Grey,
+                _ => throw new NotImplementedException()
+            };
+        }
+
         private void UpdateByteArray()
         {
+            if (_isReadOnly)
+                return;
             _pixelsBytes = TextureImage.Data;
         }
 
         private void PushData()
         {
-            _height = _mImage.Height;
-            _width = _mImage.Width;
+            _height = _image.Height;
+            _width = _image.Width;
             UpdateByteArray();
             GL.BindTexture(TextureTarget.Texture2D, _textureHandle);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, _isTransparent ? PixelInternalFormat.Rgba2 : PixelInternalFormat.R3G3B2, TextureImage.Width, TextureImage.Height, 0, _isTransparent ? PixelFormat.Rgba : PixelFormat.Rgb, PixelType.UnsignedByte, _pixelsBytes);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, TranslatePixelInternalFormat(), TextureImage.Width, TextureImage.Height, 0, TranslatePixelFormat(), PixelType.UnsignedByte, TextureImage.Data);
             GL.TextureParameter(_textureHandle, TextureParameterName.GenerateMipmap, 1/*true*/);
             GL.TextureParameter(_textureHandle, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
             GL.TextureParameter(_textureHandle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
             GL.BindTexture(TextureTarget.Texture2D, 0);
             if (_isReadOnly)
                 _pixelsBytes = Array.Empty<byte>();
-            _mImage = null;
         }
-        //public void LoadNewTexture(IdentifiedAsset asset, bool pathIsAbsolute = false)
-        //{
-        //    if (_isReadOnly)
-        //    {
-        //        Scriptorium.Error($"Image trying to change it texture to asset: <{asset.ToString()}> but failed due to it being read only");
-        //        return;
-        //    }
-        //    else
-        //    {
-        //        _mImage.Dispose();
-        //        _mImage = new MagickImage(asset.AbsolutePath);
-        //    }
-
-        //    PushData();
-        //}
+        public PixelInternalFormat TranslatePixelInternalFormat()
+        {
+            return _dataType switch
+            {
+                ImageDataType.RGB => PixelInternalFormat.R3G3B2,
+                ImageDataType.RGBA => PixelInternalFormat.Rgba2,
+                ImageDataType.Grey => PixelInternalFormat.Intensity4,
+            };
+        }
+        public PixelFormat TranslatePixelFormat()
+        {
+            return _dataType switch
+            {
+                ImageDataType.RGB => PixelFormat.Rgb,
+                ImageDataType.RGBA => PixelFormat.Rgba,
+                ImageDataType.Grey => PixelFormat.Rgb,
+            };
+        }
         internal override void Use(TextureUnit unit = TextureUnit.Texture0)
         {
             GL.ActiveTexture(unit);

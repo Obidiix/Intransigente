@@ -34,7 +34,7 @@ namespace Dazed.Vitals
         static Material _testMaterial;
         static Mesh _testMesh;
         static Transform _testMeshTransform;
-        static PointLight _testLight;
+        static SpotLight _testLight;
         /// <summary>
         /// True when the game is ran to be played
         /// </summary>
@@ -62,7 +62,8 @@ namespace Dazed.Vitals
             _testMeshTransform = new();
             Font.DefaultFont = Font.GetFontInstance(_defaultFont.AssetRelativePath);
 
-            _testLight = new(Vector3.Zero, 5, 1, Color.Red);
+            _testLight = new(Vector3.Zero, new(0.4f, 0.4f, 0.4f), Vector3.Zero);
+            DirectionalLight dirL = new(-Vector3.UnitZ, Color.White, 1);
             _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
             _testMaterial = Material.GetMaterialInstance(_testShader, true);
             _testMesh = Mesh.GetMeshInstance(_playerMeshPath.AssetRelativePath, _testMaterial);
@@ -122,6 +123,8 @@ namespace Dazed.Vitals
                 rotY += MathTeacher.DegreesToRadians * Chronos.DeltaTime * 50;
             debugViewRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, rotY);
             DebugViewportCamera.Transform.Rotation = debugViewRotation;
+            _testLight.Direction = DebugViewportCamera.Forward;
+            _testLight.Intensity = 20;
 #if DEBUG
             if(Input.IsKeyDown(Keys.F10))
                 Console.Clear();

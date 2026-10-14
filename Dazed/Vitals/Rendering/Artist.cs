@@ -81,12 +81,17 @@ namespace Dazed.Vitals.Rendering
         private const short MaximumLightInstances = 1024;
 
         private static readonly Light[] RenderedLights = new Light[MaximumRenderedLights];
-        private static readonly string[] RenderedLightStructNames = new string[MaximumRenderedLights];
         private static readonly LightCategory?[] LightCategories = new LightCategory?[MaximumRenderedLights];
         private static readonly Dictionary<LightCategory, byte> LightCounts = new(MaximumRenderedLights);
 
         private static readonly List<Light> LightInstances = new(MaximumLightInstances);
         private static readonly List<Material> LitMaterials = new(1024);
+
+        private static byte CurrentPointLightCount, CurrentSpotLightCount;
+
+        private static readonly LightParameters[] PrefabPointLightParameters = new LightParameters[MaximumRenderedLights];
+        private static readonly LightParameters[] PrefabSpotLightParameters = new LightParameters[MaximumRenderedLights];
+        private static readonly LightParameters PrefabDirectionalLightParameters;
 
         private const string PointLightStructName = "pointLights";
         private const string SpotLightStructName = "spotLights";
@@ -133,7 +138,38 @@ namespace Dazed.Vitals.Rendering
         {
             ExposedData.RetrieveAll(typeof(Artist), null);
             ScreenShader = Shader.GetShaderInstance("screenShader");
-            MissingTexture = new Texture2D(_missingTexturePath.AssetRelativePath);
+            MissingTexture = Texture2D.GetTextureInstance(_missingTexturePath!.AssetRelativePath);
+
+            var baseParams = Light.BaseParameters;
+            string[] pointParams = [.. Light.BaseParameters, .. PointLight.Parameters];
+            string[] spotParams = [.. Light.BaseParameters, .. SpotLight.Parameters];
+            for (short p = 0; p < MaximumRenderedLights; p++)
+            {
+                var pointLightBase = $"{PointLightStructName}[{p}].";
+                string[] fullParameters = GetParams(pointParams, pointLightBase);
+
+                PrefabPointLightParameters[p] = new(fullParameters, pointParams);
+            }
+            for (byte s = 0; s < MaximumRenderedLights; s++)
+            {
+                var spotLightBase = $"{SpotLightStructName}[{s}].";
+                var fullParameters = GetParams(spotParams, spotLightBase);
+
+                PrefabSpotLightParameters[s] = new(fullParameters, spotParams);
+            }
+            var dirLightBase = $"{DirectionalLightStructName}.";
+            string[] dirParams = [.. Light.BaseParameters, .. DirectionalLight.Parameters];
+            var dirLightParams = GetParams(dirParams, dirLightBase);
+            PrefabDirectionalLightParameters = new(dirLightParams, dirParams);
+        }
+
+        private static string[] GetParams(string[] allParams, string light)
+        {
+            var parameters = new string[allParams.Length];
+
+            for(byte i = 0; i < allParams.Length; i++)
+                parameters[i] = light + allParams[i];
+            return parameters;
         }
 
         internal static void Initialize()
@@ -252,6 +288,7 @@ namespace Dazed.Vitals.Rendering
 
             ArrangePasses();
             ArrangeRenderedLights();
+            CurrentPointLightCount = CurrentSpotLightCount = 0;
             for(int i = 0; i < LitMaterials.Count; i++)
             {
                 for(byte L = 0; L < MaximumRenderedLights; L++)
@@ -260,7 +297,7 @@ namespace Dazed.Vitals.Rendering
                         break;
                     LitMaterials[i].SetFloat("pointLightCount", LightCounts[LightCategory.Point]);
                     LitMaterials[i].SetFloat("spotLightCount", LightCounts[LightCategory.SpotLight]);
-                    RenderedLights[L].SetValuesTo(LitMaterials[i], RenderedLightStructNames[L]);
+                    RenderedLights[L].SetValuesTo(LitMaterials[i], GetSentParameters(LightCategories[L]!.Value));
                 }
             }
 
@@ -294,23 +331,14 @@ namespace Dazed.Vitals.Rendering
             GL.Disable(EnableCap.CullFace);
         }
 
-        private static string GetLightStructName(byte index)
+        private static LightParameters GetSentParameters(LightCategory lightCategory)
         {
-            Light light = RenderedLights[index];
-            string structName = string.Empty;
-            switch (light.Category)
+            return lightCategory switch
             {
-                case LightCategory.Point:
-                    structName = PointLightStructName + $"[{index}].";
-                    break;
-                case LightCategory.SpotLight:
-                    structName = SpotLightStructName + $"[{index}].";
-                    break;
-                case LightCategory.Directional:
-                    structName = DirectionalLightStructName + ".";
-                    break;
-            }
-            return structName;
+                LightCategory.Point => PrefabPointLightParameters[CurrentPointLightCount++],
+                LightCategory.SpotLight => PrefabSpotLightParameters[CurrentSpotLightCount++],
+                LightCategory.Directional => PrefabDirectionalLightParameters
+            };
         }
 
         private static void ArrangeRenderedLights()
@@ -346,7 +374,6 @@ namespace Dazed.Vitals.Rendering
                     continue;
                 AddCount(LightCategories[c].Value);
                 RenderedLights[c] = LightInstances[indexes[c].Value];
-                RenderedLightStructNames[c] = GetLightStructName(c);
             }
         }
 
@@ -431,6 +458,7 @@ namespace Dazed.Vitals.Rendering
                     throw new IndexOutOfRangeException($"The maximum amount of light instances was reached <{MaximumLightInstances}>");
                 return;
             }
+            short index = (short)LightInstances.Count;
             LightInstances.Add(instance);
         }
 

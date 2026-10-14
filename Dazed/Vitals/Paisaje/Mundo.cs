@@ -2,7 +2,6 @@
 using Dazed.Vitals.Paisaje.Entities;
 using Dazed.Vitals.Rendering;
 using System.Numerics;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace Dazed.Vitals.Paisaje;
 
@@ -15,6 +14,16 @@ public static class Mundo
         {
             field = value;
             ReloadPaisajeContext();
+        }
+    }
+    public static PaisajeVariables? Variables
+    {
+        get => CurrentPaisaje?.Variables;
+        set
+        {
+            if (value == null)
+                return;
+            CurrentPaisaje?.Variables = value.Value;
         }
     }
 

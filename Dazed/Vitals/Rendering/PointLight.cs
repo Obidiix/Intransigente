@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
+﻿using System.Numerics;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -11,11 +8,13 @@ namespace Dazed.Vitals.Rendering
         public Vector3 Position { get; set; }
         public float Radius { get; set; }
 
-        internal override void SetValuesTo(Material material, string structName)
+        internal static readonly string[] Parameters = ["position", "radius"];
+
+        internal override void SetValuesTo(Material material, LightParameters parameters)
         {
-            base.SetValuesTo(material, structName);
-            material.SetVector3(structName + "position", Position);
-            material.SetFloat(structName + "radius", Radius * 0.01f);
+            base.SetValuesTo(material, parameters);
+            material.SetVector3(parameters.GetIdentification(Parameters[0]), Position);
+            material.SetFloat(parameters.GetIdentification(Parameters[1]), Radius * 0.01f);
         }
 
         internal override Half ProcessLightWeight(ViewportCamera camera)

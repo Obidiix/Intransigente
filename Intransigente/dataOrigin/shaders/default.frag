@@ -91,7 +91,7 @@ vec3 CalcSpotLight(SpotLight light)
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
     
     float distance    = length(light.position - FragPos);
-    float attenuation = 1.0 / (1 + light.radius * distance);
+    float attenuation = 1.0 / (1 + light.radius * distance + 0.092 * (distance * distance));
 
     vec3 lColor = light.color * light.intensity * attenuation * intensity;
     return lColor;

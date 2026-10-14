@@ -13,7 +13,9 @@ namespace Dazed.Vitals.Rendering
         public float CutOffRadius { get; set; }
         public float OuterCutOffRadius { get; set; }
 
-        public SpotLight(Vector3 position, Color color, Vector3 direction, float intensity = 1, float cutOffRadius = MathTeacher.DegreesToRadians * 35, float outerCutOffRadius = MathTeacher.DegreesToRadians * 45) : base(intensity, color)
+        internal static readonly string[] Parameters = ["position", "direction", "cutOff", "outerCutOff"];
+
+        public SpotLight(Vector3 position, Color color, Vector3 direction, float intensity = 1, float cutOffRadius = MathTeacher.DegreesToRadians * 15, float outerCutOffRadius = MathTeacher.DegreesToRadians * 30) : base(intensity, color)
         {
             Position = position;
             Direction = direction;
@@ -21,13 +23,13 @@ namespace Dazed.Vitals.Rendering
             OuterCutOffRadius = outerCutOffRadius;
         }
 
-        internal override void SetValuesTo(Material material, string structName)
+        internal override void SetValuesTo(Material material, LightParameters parameters)
         {
-            base.SetValuesTo(material, structName);
-            material.SetVector3("position", Position);
-            material.SetVector3("direction", Direction);
-            material.SetFloat("cutOffRadius", CutOffRadius);
-            material.SetFloat("outerCutOffRadius", OuterCutOffRadius);
+            base.SetValuesTo(material, parameters);
+            material.SetVector3(parameters.GetIdentification(Parameters[0]), Position);
+            material.SetVector3(parameters.GetIdentification(Parameters[1]), Direction);
+            material.SetFloat(parameters.GetIdentification(Parameters[2]), MathF.Cos(CutOffRadius));
+            material.SetFloat(parameters.GetIdentification(Parameters[3]), MathF.Cos(OuterCutOffRadius));
         }
 
         internal override Half ProcessLightWeight(ViewportCamera camera)

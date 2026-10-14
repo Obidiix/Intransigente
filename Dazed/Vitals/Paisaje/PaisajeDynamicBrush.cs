@@ -8,6 +8,5 @@ public class PaisajeDynamicBrush : PaisajeDynamic
 
 	protected override void OnDestruction()
 	{
-		throw new NotImplementedException();
 	}
 }

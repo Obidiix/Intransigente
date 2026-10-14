@@ -8,6 +8,7 @@ public class PaisajeInstance : Renderable
     private readonly PaisajeGeometry[] _brushes;
     private readonly List<PaisajeDynamic> _elements = [];
     private readonly string[] _paisajeContext;
+    public PaisajeVariables Variables;
     
     public PaisajeInstance(string assetAbsolutePath)
     {
@@ -22,11 +23,10 @@ public class PaisajeInstance : Renderable
                     _brushes[i] = new PaisajeGeometry(sp.Elements[i]); 
                     break;
                 case PaisajeElementType.DynamicBrush:
-                    _elements.Add(InstantiateElement(sp.Elements[i]) ?? throw new NullReferenceException($"Element {sp.Elements[i]} not found"));
-                    _brushes[i] = _catchedInstance!;
+                    _elements.Add(InstantiateElement(sp.Elements[i]) ?? throw new NullReferenceException($"Element at index {i} failed on being instantiated"));
                     break;
                 case PaisajeElementType.Entity:
-                    _elements.Add(InstantiateElement(sp.Elements[i]) ?? throw new NullReferenceException($"Element {sp.Elements[i]} not found"));
+                    _elements.Add(InstantiateElement(sp.Elements[i]) ?? throw new NullReferenceException($"Element at index {i} failed on being instantiated"));
                     break;
             }
         }
@@ -40,12 +40,8 @@ public class PaisajeInstance : Renderable
             element.Destroy();
     }
 
-    private static PaisajeGeometry? _catchedInstance;
-    internal static void CatchNewGeometry(SerializedPaisajeElement geometry) => _catchedInstance = new PaisajeGeometry(geometry);
-
     public override bool AllowRendering => true;
     public override void Render(in RenderingData data)
     {
-        
     }
 }

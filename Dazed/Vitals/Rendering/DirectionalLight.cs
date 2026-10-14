@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
+﻿using System.Numerics;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -10,12 +7,14 @@ namespace Dazed.Vitals.Rendering
         public override LightCategory Category => LightCategory.Directional;
         public Vector3 Direction { get; set; } = direction;
 
+        internal static readonly string[] Parameters = ["direction"];
+
         internal override Half ProcessLightWeight(ViewportCamera camera) => Half.MaxValue;
 
-        internal override void SetValuesTo(Material material, string structName)
+        internal override void SetValuesTo(Material material, LightParameters parameters)
         {
-            base.SetValuesTo(material, structName);
-            material.SetVector3(structName + "direction", Direction);
+            base.SetValuesTo(material, parameters);
+            material.SetVector3(parameters.GetIdentification(Parameters[0]), Direction);
         }
     }
 }
