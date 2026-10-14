@@ -28,8 +28,8 @@ namespace Dazed.Vitals
             _kState = keyboardState;
             _mState = mouseState;
             _mousePosition = _mState.Position;
-            float x = MousePosition.X / Artist.Width;
-            float y = MousePosition.Y / Artist.Height;
+            float x = MousePosition.X * Artist.NormalizedWidth;
+            float y = MousePosition.Y * Artist.NormalizedHeight;
             if (x > 1)
                 x = 1;
             else if (x < 0)

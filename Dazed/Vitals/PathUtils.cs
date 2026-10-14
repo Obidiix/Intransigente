@@ -95,8 +95,12 @@ namespace Dazed.Vitals
                 sb.Remove(0, 1);
             return sb.ToString();
         }
-
-        public static string EndWithPoint(this string s) => s + (s[s.Length - 1] == '.' ? null : '.');
+        /// <summary>
+        /// Return a string that ends with a point, if it already does then it is unaffected.
+        /// </summary>
+        /// <param name="s">The string to add a dot to</param>
+        /// <returns></returns>
+        public static string EndWithDot(this string s) => s + (s[s.Length - 1] == '.' ? null : '.');
 
         private const string WindowsLongPathMark = "\\\\?";
         public static bool IsValidPath(string path)

@@ -4,7 +4,8 @@ namespace Dazed.Vitals.Rendering
 {
     public class ViewportCamera : IDisposable
     {
-        public static ViewportCamera? MainCamera { get; private set; }
+        private static bool _mainCameraDisposed;
+        public static ViewportCamera MainCamera { get; private set; }
         public bool IsMainCamera { get; private set; }
         public float FieldOfView
         {
@@ -46,6 +47,8 @@ namespace Dazed.Vitals.Rendering
         
         public Frustum ViewFrustum { get; private set; }
 
+        public Vector3 Forward => -Transform.Forward;
+
         public ViewportCamera(float fovInDegrees)
         {
             Transform = new Transform();
@@ -54,10 +57,11 @@ namespace Dazed.Vitals.Rendering
             _farClipPlane = 100f;
             ReloadProjection();
             Artist.OnWidowResize += ReloadProjection;
-            if (MainCamera == null)
+            if (MainCamera == null || _mainCameraDisposed)
             {
                 MainCamera = this;
                 IsMainCamera = true;
+                _mainCameraDisposed = false;
             }
             else
                 Artist.AssignSecondaryCamera(this);
@@ -94,7 +98,7 @@ namespace Dazed.Vitals.Rendering
             {
                 if(DebugState.DebugMedium)
                     Scriptorium.Warn("Main camera disposed");
-                MainCamera = null;
+                _mainCameraDisposed = true;
             }
             else
                 Artist.RemoveSecondaryCamera();

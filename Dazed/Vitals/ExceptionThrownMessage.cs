@@ -46,13 +46,11 @@ namespace Dazed.Vitals
         protected override void OnFramebufferResize(FramebufferResizeEventArgs e)
         {
             base.OnFramebufferResize(e);
-            Artist.ReloadWindowPosition(ClientLocation);
         }
 
         protected override void OnMove(WindowPositionEventArgs e)
         {
             base.OnMove(e);
-            Artist.ReloadWindowPosition(ClientLocation);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)

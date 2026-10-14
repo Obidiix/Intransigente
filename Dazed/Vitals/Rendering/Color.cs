@@ -57,8 +57,8 @@ public struct Color
     
     public static implicit operator Color4(Color c) =>  new Color4(c.R, c.G, c.B, c.A);
     public static implicit operator Color(Color4 c) =>  new Color(c.R, c.G, c.B, c.A);
+    public static implicit operator System.Numerics.Vector3(Color c) => new(c.R, c.G, c.B);
 
     public Vector4 ToVector4()  => new Vector4(_r, _g, _b, _a);
-
     public Vector3 ToVector3() => new Vector3(R, G, B);
 }

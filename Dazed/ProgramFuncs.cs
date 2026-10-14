@@ -47,7 +47,7 @@ namespace Dazed
 #endif
         }
         private const string DataOriginFileName = "dataorigin.txt";
-        public static void RetrieveFolders()
+        public static void RetrieveDataFiles()
         {
             string path = PathUtils.BaseDirectoryCombine(DataOriginFileName);
             if (!File.Exists(path))
@@ -58,18 +58,22 @@ namespace Dazed
             foreach (string dirPath in Directory.GetDirectories(content, "*", SearchOption.AllDirectories))
             {
                 string pathTo = dirPath.Replace(content, PathUtils.BaseDirectory);
+                if (Directory.Exists(pathTo))
+                    continue;
                 Directory.CreateDirectory(pathTo);
             }
 
             //Copy all the files & Replaces any files with the same name
             foreach (string filePath in Directory.GetFiles(content, "*.*", SearchOption.AllDirectories))
             {
+                if (filePath.EndsWith(".ignore"))
+                    continue;
                 string pathTo = filePath.Replace(content, PathUtils.BaseDirectory);
                 if (File.Exists(pathTo))
                 {
                     var last = File.GetLastWriteTimeUtc(pathTo);
                     DateTime fileLastWrite = File.GetLastWriteTimeUtc(filePath);
-                    if (last <= fileLastWrite)
+                    if (last >= fileLastWrite)
                         continue;
                 }
                 File.Copy(filePath, pathTo, true);

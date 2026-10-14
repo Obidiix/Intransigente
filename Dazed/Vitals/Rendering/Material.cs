@@ -6,7 +6,6 @@ namespace Dazed.Vitals.Rendering
     {
         private readonly Material? _parent;
         private bool IsVariant => _parent != null;
-
         private readonly Shader _materialShader;
         private readonly Dictionary<string, int> _keyToIndex = [];
         private readonly List<MaterialParameter> _params = [];
@@ -16,13 +15,13 @@ namespace Dazed.Vitals.Rendering
         private static readonly Dictionary<Shader, int> Indexes = [];
         private static readonly List<Material> InstancedMaterials = [];
 
-        public static Material GetMaterialInstance(Shader matShader, bool forceNewInstance = false)
+        public static Material GetMaterialInstance(Shader matShader, bool litMaterial = false, bool forceNewInstance = false)
         {
             if (!forceNewInstance)
                 if (Indexes.TryGetValue(matShader, out var index))
                     return InstancedMaterials[index];
             Material? m = null;
-            m = new Material(matShader);
+            m = new Material(matShader, litMaterial);
             Indexes.Add(matShader, InstancedMaterials.Count);
             InstancedMaterials.Add(m);
             return m;
@@ -163,9 +162,11 @@ namespace Dazed.Vitals.Rendering
         private int ParameterLocation(string name) => _keyToIndex[name];
         private void SetValue<T>(string name, T value) where T : struct => _params[ParameterLocation(name)].SetValue(value);
 
-        private Material(Shader shader)
+        private Material(Shader shader, bool litMaterial = false)
         {
             _materialShader = shader;
+            if (litMaterial)
+                Artist.AddLitMaterial(this);
             Shader.AfterShaderReload += UpdateShaderParameters;
             GetUniformsFromShader();
         }

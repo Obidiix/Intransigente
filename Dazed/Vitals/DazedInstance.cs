@@ -34,6 +34,7 @@ namespace Dazed.Vitals
         static Material _testMaterial;
         static Mesh _testMesh;
         static Transform _testMeshTransform;
+        static PointLight _testLight;
         /// <summary>
         /// True when the game is ran to be played
         /// </summary>
@@ -61,8 +62,9 @@ namespace Dazed.Vitals
             _testMeshTransform = new();
             Font.DefaultFont = Font.GetFontInstance(_defaultFont.AssetRelativePath);
 
+            _testLight = new(Vector3.Zero, 5, 1, Color.Red);
             _testShader = Shader.GetShaderInstance("default.vert", "default.frag");
-            _testMaterial = Material.GetMaterialInstance(_testShader);
+            _testMaterial = Material.GetMaterialInstance(_testShader, true);
             _testMesh = Mesh.GetMeshInstance(_playerMeshPath.AssetRelativePath, _testMaterial);
             DebugViewportCamera = new(90);
 
@@ -85,13 +87,11 @@ namespace Dazed.Vitals
         {
             base.OnFramebufferResize(e);
             Artist.SetResolution(e.Width, e.Height);
-            Artist.ReloadWindowPosition(ClientLocation);
         }
 
         protected override void OnMove(WindowPositionEventArgs e)
         {
             base.OnMove(e);
-            Artist.ReloadWindowPosition(ClientLocation);
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -114,6 +114,7 @@ namespace Dazed.Vitals
             if (Input.IsKeyDown(Keys.Q))
                 movement.Y += -1;
             DebugViewportCamera.Move(movement, Chronos.DeltaTime);
+            _testLight.Position = DebugViewportCamera.Transform.Position;
 
             if (Input.IsKeyDown(Keys.Left))
                 rotY += -MathTeacher.DegreesToRadians * Chronos.DeltaTime * 50;
@@ -133,9 +134,15 @@ namespace Dazed.Vitals
                 _testMeshTransform.MoveGlobal(-Vector3.UnitZ * Chronos.DeltaTime);
             if (Input.IsKeyDown(Keys.L))
                 _testMeshTransform.MoveGlobal(Vector3.UnitX * Chronos.DeltaTime);
-#endif
+            if (_reloadShadersCombo.FirstHoldSecondPressed())
+            {
+                ProgramFuncs.RetrieveDataFiles();
+                Artist.TriggerAllShadersReload();
+            }
+#else
             if (_reloadShadersCombo.FirstHoldSecondPressed())
                 Artist.TriggerAllShadersReload();
+#endif
             if (Input.KeyJustPressed(Keys.F11))
             {
                 switch (WindowState)

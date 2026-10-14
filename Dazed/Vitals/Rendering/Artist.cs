@@ -2,8 +2,8 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using Dazed.Vitals.Rendering.RenderDebug;
-using OpenTK.Mathematics;
 using Dazed.Vitals.AssetReference;
+using System.Numerics;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -24,9 +24,6 @@ namespace Dazed.Vitals.Rendering
         private static int _width;
         public static int Height { get => _height; internal set { _height = value; RefreshRenderingInfo(); } }
         private static int _height;
-
-        public static float RenderingScale { get => _renderingScale; set { _renderingScale = value < 0.1f ? 0.1f : value; RefreshRenderingInfo(); } }
-        private static float _renderingScale = 1f;
 
         public static float NormalizedHeight => _normalizedHeight;
         private static float _normalizedHeight;
@@ -65,23 +62,35 @@ namespace Dazed.Vitals.Rendering
         private static float _viewportX, _viewportY;
         private static int _viewportWidth, _viewportHeight;
 
-        public static Vector2i WinPos => _winPos;
-        private static Vector2i _winPos;
-
         public static event Action OnWidowResize = null!;
 
-        const int RenderElementsLimit = 4096;
-        private static readonly Renderable?[] AllRender = new Renderable[RenderElementsLimit];
+        private const short RenderElementsLimit = 4096;
+        private static readonly Renderable?[] AllRender = new Renderable?[RenderElementsLimit];
         private static readonly RenderingPass[] RenderPasses = new RenderingPass[RenderElementsLimit];
 
         private static ViewportCamera? _secondaryCamera;
 
         private static readonly List<TemporalRenderable> TemporalRenderables = new();
         
-        private static readonly List<int> GeometryFirst = new();
-        private static readonly List<int> GeometrySecond = new();
-        private static readonly List<int> Gui = new();
+        private static readonly List<short> GeometryFirst = new();
+        private static readonly List<short> GeometrySecond = new();
+        private static readonly List<short> Gui = new();
         private static bool _modifiedRendered = true;
+
+        private const byte MaximumRenderedLights = 8;
+        private const short MaximumLightInstances = 1024;
+
+        private static readonly Light[] RenderedLights = new Light[MaximumRenderedLights];
+        private static readonly string[] RenderedLightStructNames = new string[MaximumRenderedLights];
+        private static readonly LightCategory?[] LightCategories = new LightCategory?[MaximumRenderedLights];
+        private static readonly Dictionary<LightCategory, byte> LightCounts = new(MaximumRenderedLights);
+
+        private static readonly List<Light> LightInstances = new(MaximumLightInstances);
+        private static readonly List<Material> LitMaterials = new(1024);
+
+        private const string PointLightStructName = "pointLights";
+        private const string SpotLightStructName = "spotLights";
+        private const string DirectionalLightStructName = "dirLight";
 
         private static int _currentMeshBinding;
 
@@ -119,8 +128,6 @@ namespace Dazed.Vitals.Rendering
             _height = height;
             RefreshRenderingInfo();
         }
-
-        internal static void ReloadWindowPosition(Vector2i pos) => _winPos = pos;
 
         static Artist()
         {
@@ -244,10 +251,20 @@ namespace Dazed.Vitals.Rendering
             GL.Enable(EnableCap.CullFace);
 
             ArrangePasses();
+            ArrangeRenderedLights();
+            for(int i = 0; i < LitMaterials.Count; i++)
+            {
+                for(byte L = 0; L < MaximumRenderedLights; L++)
+                {
+                    if (LightCategories[L] == null)
+                        break;
+                    LitMaterials[i].SetFloat("pointLightCount", LightCounts[LightCategory.Point]);
+                    LitMaterials[i].SetFloat("spotLightCount", LightCounts[LightCategory.SpotLight]);
+                    RenderedLights[L].SetValuesTo(LitMaterials[i], RenderedLightStructNames[L]);
+                }
+            }
 
             RenderingData data;
-            //Main Camera
-            //Usually, should not be null
             if (ViewportCamera.MainCamera != null)
             {
                 data = new(ViewportCamera.MainCamera.Projection, ViewportCamera.MainCamera.View, ViewportCamera.MainCamera.Transform.Position, ViewportCamera.MainCamera.ViewFrustum);
@@ -277,6 +294,73 @@ namespace Dazed.Vitals.Rendering
             GL.Disable(EnableCap.CullFace);
         }
 
+        private static string GetLightStructName(byte index)
+        {
+            Light light = RenderedLights[index];
+            string structName = string.Empty;
+            switch (light.Category)
+            {
+                case LightCategory.Point:
+                    structName = PointLightStructName + $"[{index}].";
+                    break;
+                case LightCategory.SpotLight:
+                    structName = SpotLightStructName + $"[{index}].";
+                    break;
+                case LightCategory.Directional:
+                    structName = DirectionalLightStructName + ".";
+                    break;
+            }
+            return structName;
+        }
+
+        private static void ArrangeRenderedLights()
+        {
+            RestoreCounts();
+            byte currentCount = 0;
+            short?[] indexes = new short?[MaximumRenderedLights];
+            Half[] weights = new Half[MaximumRenderedLights];
+            for(short i = 0; i < LightInstances.Count; i++)
+            {
+                if (LightInstances[i] == null)
+                    continue;
+                var weight = LightInstances[i].ProcessLightWeight(ViewportCamera.MainCamera);
+                if (currentCount < MaximumRenderedLights)
+                {
+                    weights[currentCount] = weight;
+                    indexes[currentCount++] = i;
+                    continue;
+                }
+                for(short j = 0; j < indexes.Length; j++)
+                {
+                    if(weight > weights[j])
+                    {
+                        weights[j] = weight;
+                        indexes[j] = i;
+                    }
+                }
+            }
+            for(byte c = 0; c < MaximumRenderedLights; c++)
+            {
+                LightCategories[c] = indexes[c].HasValue ? LightInstances[indexes[c].Value].Category : null;
+                if (!indexes[c].HasValue)
+                    continue;
+                AddCount(LightCategories[c].Value);
+                RenderedLights[c] = LightInstances[indexes[c].Value];
+                RenderedLightStructNames[c] = GetLightStructName(c);
+            }
+        }
+
+        private static void AddCount(LightCategory lightCategory) => LightCounts[lightCategory] = (byte)(LightCounts[lightCategory] + 1);
+
+        private static void RestoreCounts()
+        {
+            LightCounts.Clear();
+            LightCounts.Add(LightCategory.Point, 0);
+            LightCounts.Add(LightCategory.SpotLight, 0);
+            LightCounts.Add(LightCategory.Directional, 0);
+            LightCounts.Add(LightCategory.Other, 0);
+        }
+
         private static void DrawTemporal(in RenderingData data)
         {
             foreach (var t in TemporalRenderables)
@@ -292,7 +376,7 @@ namespace Dazed.Vitals.Rendering
             GeometryFirst.Clear();
             GeometrySecond.Clear();
             Gui.Clear();
-            for(int i = 0; i < _currentMeshBinding; i++)
+            for(short i = 0; i < _currentMeshBinding; i++)
             {
                 if (AllRender[i] == null)
                     continue;
@@ -313,7 +397,7 @@ namespace Dazed.Vitals.Rendering
 
         private static void RenderPass(RenderingPass pass, in RenderingData? data)
         {
-            List<int> indexes = null!;
+            List<short> indexes = null!;
             switch (pass)
             {
                 case RenderingPass.geometryFirst:
@@ -335,14 +419,23 @@ namespace Dazed.Vitals.Rendering
             }
         }
 
-        private static void GuiRendering()
+        private static void GuiRendering() => RenderPass(RenderingPass.userInterface, null);
+
+        public static void QueueTemporal(TemporalRenderable temp) => TemporalRenderables.Add(temp);
+
+        internal static void RegisterNewLight(Light instance)
         {
-            RenderPass(RenderingPass.userInterface, null);
+            if (LightInstances.Count == MaximumLightInstances)
+            {
+                if (DebugState.DebugLow)
+                    throw new IndexOutOfRangeException($"The maximum amount of light instances was reached <{MaximumLightInstances}>");
+                return;
+            }
+            LightInstances.Add(instance);
         }
 
-        public static void QueueTemporal(TemporalRenderable temp)
-        {
-            TemporalRenderables.Add(temp);
-        }
+        internal static void RemoveLightInstance(Light instance) => LightInstances.Remove(instance);
+
+        internal static void AddLitMaterial(Material material) => LitMaterials.Add(material);
     }
 }

@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Dazed.Vitals.Rendering
+{
+    public enum LightCategory
+    {
+        Other,
+        Directional,
+        Point,
+        SpotLight
+    }
+}

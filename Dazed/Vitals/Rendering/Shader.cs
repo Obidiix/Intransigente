@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
-using System.Reflection.Metadata;
 using Vector2 = OpenTK.Mathematics.Vector2;
 using Vector3 = OpenTK.Mathematics.Vector3;
 using Vector4 = OpenTK.Mathematics.Vector4;
@@ -10,7 +9,7 @@ namespace Dazed.Vitals.Rendering
 {
     public class Shader : IDisposable
     {
-        private int _handle;
+        private int _handle, _fragmentShader, _vertexShader;
         private bool _isDisposed;
         internal static event Action? ReloadAllShaders;
         internal static event Action? AfterShaderReload;
@@ -93,17 +92,17 @@ namespace Dazed.Vitals.Rendering
             var vertexShaderSource = File.ReadAllText(vertPath);
             var fragmentShaderSource = File.ReadAllText(fragPath);
 
-            var vertexShader = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShader, vertexShaderSource);
-            if (!CompileShader(vertexShader))
+            _vertexShader = GL.CreateShader(ShaderType.VertexShader);
+            GL.ShaderSource(_vertexShader, vertexShaderSource);
+            if (!CompileShader(_vertexShader))
                 if (_handle != 0)
                     return;
                 else
                     throw new Exception("Error on compilation, check command console for more info.");
 
-            var fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, fragmentShaderSource);
-            if (!CompileShader(fragmentShader))
+            _fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(_fragmentShader, fragmentShaderSource);
+            if (!CompileShader(_fragmentShader))
                 if (_handle != 0)
                     return;
                 else
@@ -112,8 +111,8 @@ namespace Dazed.Vitals.Rendering
             if (_handle == 0)
                 _handle = GL.CreateProgram();
 
-            GL.AttachShader(_handle, vertexShader);
-            GL.AttachShader(_handle, fragmentShader);
+            GL.AttachShader(_handle, _vertexShader);
+            GL.AttachShader(_handle, _fragmentShader);
 
             LinkProgram(_handle);
 
@@ -133,10 +132,10 @@ namespace Dazed.Vitals.Rendering
                 _uniformLocations.Add(key, location);
             }
 
-            GL.DetachShader(_handle, vertexShader);
-            GL.DetachShader(_handle, fragmentShader);
-            GL.DeleteShader(fragmentShader);
-            GL.DeleteShader(vertexShader);
+            GL.DetachShader(_handle, _vertexShader);
+            GL.DetachShader(_handle, _fragmentShader);
+            GL.DeleteShader(_fragmentShader);
+            GL.DeleteShader(_vertexShader);
         }
 
         private static bool FilesExists(string vertPath, string fragPath)

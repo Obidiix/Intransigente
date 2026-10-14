@@ -23,7 +23,7 @@ namespace Intransigente
                 WindowState = OpenTK.Windowing.Common.WindowState.Maximized
             };
 #if DEBUG
-            ProgramFuncs.RetrieveFolders();
+            ProgramFuncs.RetrieveDataFiles();
 #endif
             ProgramFuncs.ProcessArguments(args);
             Scriptorium.OnEntryRecord += Log;

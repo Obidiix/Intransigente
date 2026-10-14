@@ -10,7 +10,7 @@ namespace Dazed.Vitals
         public static void Message(string? message)
         {
             string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
-            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithDot();
             Console.WriteLine(result);
             OnEntryRecord?.Invoke("Message: " + result);
         }
@@ -19,7 +19,7 @@ namespace Dazed.Vitals
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
-            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithDot();
             Console.WriteLine(result);
             Console.ResetColor();
             OnEntryRecord?.Invoke("Warning: " + result);
@@ -30,7 +30,7 @@ namespace Dazed.Vitals
         {
             Console.ForegroundColor = ConsoleColor.Red;
             string result = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) + " - ";
-            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithPoint();
+            result += string.IsNullOrEmpty(message) ? "Null message." : message.EndWithDot();
             Console.WriteLine(result);
             Console.ResetColor();
             OnEntryRecord?.Invoke("Error: " + result);

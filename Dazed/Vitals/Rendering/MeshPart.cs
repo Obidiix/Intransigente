@@ -1,5 +1,6 @@
-﻿using System.Numerics;
-using OpenTK.Graphics.OpenGL;
+﻿using OpenTK.Graphics.OpenGL;
+using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Dazed.Vitals.Rendering
 {
@@ -209,10 +210,9 @@ namespace Dazed.Vitals.Rendering
             _partMaterial.SetMatrix4("projection", data.ProjectionMatrix);
             _partMaterial.SetMatrix4("model", _meshMatrix * meshWorld);
 
+            //TODO: Replace this section with something fancier and general
             _partMaterial.SetVector3("objectColor", new Vector3(1f, 1f, 1f));
-            _partMaterial.SetVector3("ambientColor", new Vector3(0.3f, 0.3f, 0));
-            _partMaterial.SetVector3("lightColor", new Vector3(1f, 1f, 1f));
-            _partMaterial.SetVector3("lightPos", new Vector3(0, 0, -3));
+            _partMaterial.SetVector3("ambientColor", new Vector3(0.1f, 0.1f, 0));
         }
 
         private void ReloadMaterialData()
